@@ -2,8 +2,7 @@
 filesystem-api
 **************
 
-.. image:: https://github.com/rena2damas/filesystem-api/actions/workflows/ci.yaml/badge
-.svg
+.. image:: https://github.com/rena2damas/filesystem-api/actions/workflows/ci.yaml/badge.svg
     :target: https://github.com/rena2damas/filesystem-api/actions/workflows/ci.yaml
     :alt: CI
 .. image:: https://codecov.io/gh/rena2damas/filesystem-api/branch/master/graph/badge.svg
