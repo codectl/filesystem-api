@@ -9,7 +9,7 @@ packages = [
     { include = "*", from = "src" }
 ]
 homepage = ""
-repository = "https://github.com/rena2damas/filexplorer"
+repository = "https://github.com/rena2damas/filesystem-api"
 documentation = ""
 keywords = [
     "filesystem-api",
