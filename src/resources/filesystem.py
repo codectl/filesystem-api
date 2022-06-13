@@ -6,11 +6,11 @@ from src import utils
 from src.api.filesystem import FilesystemAPI
 from src.resources.auth import current_username, requires_auth
 
-blueprint = Blueprint("filesystem", __name__, url_prefix="/fs")
+blueprint = Blueprint("filesystem", __name__)
 api = Api(blueprint)
 
 
-@api.resource("/<path:path>", endpoint="filesystem")
+@api.resource("/<path:path>", endpoint="fs")
 class Filesystem(Resource):
     @requires_auth(schemes=["basic"])
     def get(self, path):
@@ -53,14 +53,12 @@ class Filesystem(Resource):
         path = utils.normpath(path)
         username = current_username
         fs_api = FilesystemAPI(username=username)
-        if not any(path.startswith(p) for p in fs_api.supported_paths()):
-            utils.abort_with(code=400, message="unsupported path")
         try:
             accept = request.headers.get("accept", "application/json")
             if accept == "application/json":
-                return jsonify(fs_api.ls(path=path))
+                return jsonify(fs_api.list_files(path=path))
             elif accept == "application/octet-stream":
-                stats = fs_api.ls(path=path, flags="-dlL")[0]
+                stats = fs_api.list_files(path=path, flags="-dlL")[0]
                 mode = utils.file_mode(stats=stats)
                 name, content = fs_api.attachment(path=path, mode=mode)
                 return send_file(content, attachment_filename=name, as_attachment=True)
@@ -119,16 +117,13 @@ class Filesystem(Resource):
         """
         path = utils.normpath(path)
         username = current_username
-        fs_api = FilesystemAPI(username=username)
-        if not any(path.startswith(p) for p in fs_api.supported_paths()):
-            utils.abort_with(code=400, message="unsupported path")
-
+        fs = FilesystemAPI(username=username)
         files = request.files.to_dict(flat=False).get("files", [])
         if not files:
             utils.abort_with(code=400, message="missing files")
 
         try:
-            fs_api.upload_files(path=path, files=files)
+            fs.upload_files(path=path, files=files)
             return utils.http_response(201), 201
         except PermissionError as ex:
             utils.abort_with(code=403, message=str(ex))
@@ -183,16 +178,13 @@ class Filesystem(Resource):
         """
         path = utils.normpath(path)
         username = current_username
-        fs_api = FilesystemAPI(username=username)
-        if not any(path.startswith(p) for p in fs_api.supported_paths()):
-            utils.abort_with(code=400, message="unsupported path")
-
+        fs = FilesystemAPI(username=username)
         files = request.files.to_dict(flat=False).get("files", [])
         if not files:
             utils.abort_with(code=400, message="missing files")
 
         try:
-            fs_api.upload_files(path=path, files=files, update=True)
+            fs.upload_files(path=path, files=files, update=True)
             return utils.http_response(204), 204
         except PermissionError as ex:
             utils.abort_with(code=403, message=str(ex))
@@ -235,12 +227,9 @@ class Filesystem(Resource):
         """
         path = utils.normpath(path)
         username = current_username
-        fs_api = FilesystemAPI(username=username)
-        if not any(path.startswith(p) for p in fs_api.supported_paths()):
-            utils.abort_with(code=400, message="unsupported path")
-
+        fs = FilesystemAPI(username=username)
         try:
-            fs_api.delete_file(path=path)
+            fs.delete_file(path=path)
             return utils.http_response(204), 204
         except PermissionError as ex:
             utils.abort_with(code=403, message=str(ex))
@@ -248,3 +237,52 @@ class Filesystem(Resource):
             utils.abort_with(code=404, message=str(ex))
         except Exception as ex:
             utils.abort_with(code=400, message=str(ex))
+
+
+@api.resource("/actions/<path:path>", endpoint="actions")
+class FilesystemActions(Resource):
+    @requires_auth(schemes=["basic"])
+    def post(self, path):
+        """
+        Use request body to specify intended action on given path.
+        ---
+        parameters:
+        - in: path
+          name: path
+          schema:
+            type: string
+          required: true
+          description: the directory to create the resource at
+        tags:
+            - filesystem
+        security:
+            - BasicAuth: []
+        requestBody:
+            content:
+                multipart/form-data:
+                    schema:
+                        type: object
+                        required: [files]
+                        properties:
+                            files:
+                                type: array
+                                items:
+                                    type: file
+                                    description: file to create
+        responses:
+            201:
+                content:
+                    application/json:
+                        schema:
+                            "$ref": "#/components/schemas/HttpResponse"
+
+            400:
+                $ref: "#/components/responses/BadRequest"
+            401:
+                $ref: "#/components/responses/Unauthorized"
+            403:
+                $ref: "#/components/responses/Forbidden"
+            404:
+                $ref: "#/components/responses/NotFound"
+        """
+        pass
