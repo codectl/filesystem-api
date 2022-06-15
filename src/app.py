@@ -3,6 +3,7 @@ from apispec.ext.marshmallow import MarshmallowPlugin
 from apispec_plugins.webframeworks.flask import FlaskPlugin
 from apispec_ui.flask import Swagger
 from flask import Blueprint, Flask, redirect, url_for
+from flask_cors import CORS
 from werkzeug.exceptions import HTTPException
 
 from src import __meta__, __version__, utils
@@ -29,6 +30,8 @@ def create_app(config_name="development", dotenv=True, configs=None):
 
 def setup_app(app):
     """Initial setups."""
+    CORS(app)  # enable CORS
+
     url_prefix = app.config["APPLICATION_ROOT"]
     openapi_version = app.config["OPENAPI"]
 
