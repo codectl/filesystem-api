@@ -1,5 +1,5 @@
 import os
-import stat
+import pwd
 import subprocess
 
 from flask_restful import abort
@@ -31,27 +31,6 @@ def shell(cmd, universal_newlines=True, **kwargs):
     return stdout
 
 
-def isfile(mode):
-    return stat.S_ISREG(mode or 0)
-
-
-def isdir(mode):
-    return stat.S_ISDIR(mode or 0)
-
-
-def file_mode(stats):
-    """Return first character from a stat string like '-rwx'."""
-    if not stats or not isinstance(stats, str):
-        return None
-    permissions = next(iter(stats.split()), "")
-    char = next(iter(permissions), None)
-    if char == "-":
-        return stat.S_IFREG
-    elif char == "d":
-        return stat.S_IFDIR
-    return 0
-
-
 def http_response(code: int, message="", serialize=True, **kwargs):
     response = oas.HttpResponse(
         code=code, reason=HTTP_STATUS_CODES[code], message=message
@@ -61,5 +40,13 @@ def http_response(code: int, message="", serialize=True, **kwargs):
     return response
 
 
-def abort_with(code: int, message=""):
-    abort(code, **http_response(code, message=message))
+def abort_with(code: int, message="", **kwargs):
+    abort(code, **http_response(code, message=message, **kwargs))
+
+
+def user_uid(username):
+    return pwd.getpwnam(username).pw_uid
+
+
+def user_gid(username):
+    return pwd.getpwnam(username).pw_gid
