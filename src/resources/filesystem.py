@@ -1,5 +1,8 @@
+import operator as op
+import os
+
 from flask import Blueprint, jsonify, request, send_file
-from flask_restful import abort, Api, Resource
+from flask_restful import Api, Resource
 from http.client import HTTPException
 
 from src import utils
@@ -299,7 +302,27 @@ class FilesystemActions(Resource):
                     "cwd": fs.file_stats(path=body["path"]),
                     "files": [fs.file_stats(file) for file in files],
                 }
+            elif body["action"] == "details":
+                stats = []
+                for data in body["data"]:
+                    file_stats = fs.file_stats(os.path.join(body["path"], data["name"]))
+                    stats.append(file_stats)
+                response = {
+                    "name": ", ".join(s["name"] for s in stats),
+                    "size": sum(s["size"] for s in stats),
+                    "location": stats[0]["path"],
+                    "multipleFiles": len(stats) > 1,
+                }
+                if len(stats) == 1:
+                    stats = stats[0]
+                    response["created"] = stats["dateCreated"]
+                    response["modified"] = stats["dateModified"]
+                    response["isFile"] = stats["isFile"]
+                return {"details": response}
+
         except PermissionError:
             return {"error": {"code": 401, "message": "Permission denied"}}
         except FileNotFoundError:
-            return {"error": {"code": 404, "message": "File not found"}}
+            return {"error": {"code": 400, "message": "File not found"}}
+        # except Exception as ex:
+        #     return {"error": {"code": 400, "message": "Bad request"}}
