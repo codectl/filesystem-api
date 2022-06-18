@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request, send_file
-from flask_restful import Api, Resource
+from flask_restful import abort, Api, Resource
 from http.client import HTTPException
 
 from src import utils
@@ -239,10 +239,13 @@ class Filesystem(Resource):
             utils.abort_with(code=400, message=str(ex))
 
 
-@api.resource("/actions/<path:path>", endpoint="actions")
+@api.resource("/actions", endpoint="actions")
 class FilesystemActions(Resource):
-    @requires_auth(schemes=["basic"])
-    def post(self, path):
+    # @requires_auth(schemes=["basic"])
+    def options(self):
+        return utils.http_response(200), 200
+
+    def post(self):
         """
         Use request body to specify intended action on given path.
         ---
@@ -285,4 +288,22 @@ class FilesystemActions(Resource):
             404:
                 $ref: "#/components/responses/NotFound"
         """
-        pass
+        body = request.json
+        fs = FilesystemAPI(username=None)
+        try:
+            if body["action"] == "read":
+                files = fs.list_files(path=body["path"])
+                return {
+                    "cwd": fs.file_stats(path=body["path"]),
+                    "files": [fs.file_stats(file) for file in files]
+                }
+        except PermissionError:
+            return {"error": {
+                "code": 401,
+                "message": "Permission denied"
+            }}
+        except FileNotFoundError:
+            return {"error": {
+                "code": 404,
+                "message": "File not found"
+            }}
