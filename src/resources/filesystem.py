@@ -292,18 +292,14 @@ class FilesystemActions(Resource):
         fs = FilesystemAPI(username=None)
         try:
             if body["action"] == "read":
-                files = fs.list_files(path=body["path"])
+                files = fs.list_files(
+                    path=body["path"], skip_hidden=not body["showHiddenItems"]
+                )
                 return {
                     "cwd": fs.file_stats(path=body["path"]),
-                    "files": [fs.file_stats(file) for file in files]
+                    "files": [fs.file_stats(file) for file in files],
                 }
         except PermissionError:
-            return {"error": {
-                "code": 401,
-                "message": "Permission denied"
-            }}
+            return {"error": {"code": 401, "message": "Permission denied"}}
         except FileNotFoundError:
-            return {"error": {
-                "code": 404,
-                "message": "File not found"
-            }}
+            return {"error": {"code": 404, "message": "File not found"}}

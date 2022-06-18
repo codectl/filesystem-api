@@ -105,9 +105,13 @@ class FilesystemAPI:
     #     else:
     #         raise Exception(err)
 
-    def list_files(self, path):
-        return [os.path.join(path, filename) for filename in iter(os.scandir(
-            path=path))]
+    def list_files(self, path, skip_hidden=False):
+        return [
+            os.path.join(path, file.name)
+            for file in iter(os.scandir(path=path))
+            if not file.name.startswith(".")
+            or (file.name.startswith(".") and not skip_hidden)
+        ]
 
     def file_stats(self, path):
         stats = os.stat(path, follow_symlinks=False)
@@ -120,7 +124,6 @@ class FilesystemAPI:
             "dateModified": stats.st_mtime,
             "dateCreated": stats.st_ctime,
             "type": p.suffix,
-            "hasChild": bool(next(os.walk(path), ((), ()))[1]) if
-            p.is_dir() else False,
-            "mode": stats.st_mode
+            "hasChild": bool(next(os.walk(path), ((), ()))[1]) if p.is_dir() else False,
+            "mode": stats.st_mode,
         }
