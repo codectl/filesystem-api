@@ -1,4 +1,4 @@
-import io
+from datetime import datetime
 import os
 import pathlib
 import subprocess
@@ -121,8 +121,8 @@ class FilesystemAPI:
             "path": path,
             "size": stats.st_size,
             "isFile": os.path.isfile(path),
-            "dateModified": stats.st_mtime,
-            "dateCreated": stats.st_ctime,
+            "dateModified": datetime.fromtimestamp(stats.st_mtime).isoformat(),
+            "dateCreated": datetime.fromtimestamp(stats.st_ctime).isoformat(),
             "type": p.suffix,
             "hasChild": bool(next(os.walk(path), ((), ()))[1]) if p.is_dir() else False,
             "mode": stats.st_mode,

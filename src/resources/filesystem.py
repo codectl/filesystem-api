@@ -307,17 +307,25 @@ class FilesystemActions(Resource):
                 for data in body["data"]:
                     file_stats = fs.file_stats(os.path.join(body["path"], data["name"]))
                     stats.append(file_stats)
-                response = {
-                    "name": ", ".join(s["name"] for s in stats),
-                    "size": sum(s["size"] for s in stats),
-                    "location": stats[0]["path"],
-                    "multipleFiles": len(stats) > 1,
-                }
-                if len(stats) == 1:
+
+                response = {}
+                if not stats:
+                    raise ValueError("Missing data")
+                elif len(stats) == 1:
                     stats = stats[0]
+                    response["name"] = stats["name"]
+                    response["size"] = utils.convert_bytes(stats["name"])
+                    response["location"] = stats["path"]
                     response["created"] = stats["dateCreated"]
                     response["modified"] = stats["dateModified"]
                     response["isFile"] = stats["isFile"]
+                    response["multipleFiles"] = False
+                elif len(stats) > 1:
+                    response["name"] = ", ".join(s["name"] for s in stats),
+                    response["size"] = utils.convert_bytes(sum(s["size"] for s in stats)),
+                    response["location"] = f"All in {os.path.dirname(stats[0]['path'])}",
+                    response["isFile"] = False
+                    response["multipleFiles"] = True
                 return {"details": response}
 
         except PermissionError:
