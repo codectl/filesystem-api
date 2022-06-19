@@ -324,7 +324,7 @@ class FilesystemActions(Resource):
                     size = sum(s["size"] for s in stats)
                     location = f"All in {os.path.dirname(stats[0]['path'])}"
                     response["name"] = (", ".join(s["name"] for s in stats),)
-                    response["size"] = (utils.convert_bytes(size),)
+                    response["size"] = utils.convert_bytes(size)
                     response["location"] = location
                     response["isFile"] = False
                     response["multipleFiles"] = True
