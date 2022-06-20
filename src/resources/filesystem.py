@@ -329,10 +329,36 @@ class FilesystemActions(Resource):
                     response["isFile"] = False
                     response["multipleFiles"] = True
                 return {"details": response}
-
+            elif body["action"] == "create":
+                fs.create_dir(path=body["path"], name=body["name"])
+                return {
+                    "path": body["path"],
+                    "name": body["name"],
+                    "files": [fs.file_stats(os.path.join(body["path"], body["name"]))],
+                }
+            elif body["action"] == "delete":
+                for name in body["names"]:
+                    path = os.path.join(body["path"], name)
+                    fs.remove_path(path=path)
+                return {
+                    "path": body["path"],
+                    "names": body["names"],
+                    "files": [
+                        {"path": os.path.join(body["path"], name)}
+                        for name in body["names"]
+                    ],
+                }
         except PermissionError:
             return {"error": {"code": 401, "message": "Permission denied"}}
         except FileNotFoundError:
-            return {"error": {"code": 400, "message": "File not found"}}
+            return {"error": {"code": 404, "message": "File not found"}}
+        except FileExistsError:
+            return {
+                "error": {
+                    "code": 400,
+                    "message": f"File \"{body['name']}\" already exists in \""
+                    f"{body['path']}\".",
+                }
+            }
         # except Exception as ex:
         #     return {"error": {"code": 400, "message": "Bad request"}}

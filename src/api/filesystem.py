@@ -1,6 +1,7 @@
 from datetime import datetime
 import os
 import pathlib
+import shutil
 import subprocess
 
 from werkzeug.utils import secure_filename
@@ -127,3 +128,12 @@ class FilesystemAPI:
             "hasChild": bool(next(os.walk(path), ((), ()))[1]) if p.is_dir() else False,
             "mode": stats.st_mode,
         }
+
+    def create_dir(self, path, name):
+        os.mkdir(os.path.join(path, name))
+
+    def remove_path(self, path):
+        if os.path.isfile(path) or os.path.islink(path):
+            os.remove(path)
+        elif os.path.isdir(path):
+            shutil.rmtree(path)
