@@ -1,6 +1,7 @@
 from datetime import datetime
 import os
 import pathlib
+import re
 import shutil
 import subprocess
 
@@ -106,12 +107,15 @@ class FilesystemAPI:
     #     else:
     #         raise Exception(err)
 
-    def list_files(self, path, skip_hidden=False):
+    def list_files(self, path, show_hidden=False, substr=None):
+        regex = rf".*{(substr or '').strip('*')}.*"
+        if not show_hidden:
+            regex = "".join((r"^(?!\.)", regex))
+
         return [
             os.path.join(path, file.name)
             for file in iter(os.scandir(path=path))
-            if not file.name.startswith(".")
-            or (file.name.startswith(".") and not skip_hidden)
+            if re.match(regex, file.name)
         ]
 
     def file_stats(self, path):
