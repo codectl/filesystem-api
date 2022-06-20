@@ -314,7 +314,7 @@ class FilesystemActions(Resource):
                 elif len(stats) == 1:
                     stats = stats[0]
                     response["name"] = stats["name"]
-                    response["size"] = utils.convert_bytes(stats["name"])
+                    response["size"] = utils.convert_bytes(stats["size"])
                     response["location"] = stats["path"]
                     response["created"] = stats["dateCreated"]
                     response["modified"] = stats["dateModified"]
@@ -323,7 +323,7 @@ class FilesystemActions(Resource):
                 elif len(stats) > 1:
                     size = sum(s["size"] for s in stats)
                     location = f"All in {os.path.dirname(stats[0]['path'])}"
-                    response["name"] = (", ".join(s["name"] for s in stats),)
+                    response["name"] = ", ".join(s["name"] for s in stats)
                     response["size"] = utils.convert_bytes(size)
                     response["location"] = location
                     response["isFile"] = False
