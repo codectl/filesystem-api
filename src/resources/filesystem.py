@@ -298,7 +298,7 @@ class FilesystemActions(Resource):
                 files = fs.list_files(
                     path=body["path"],
                     substr=body.get("searchString"),
-                    show_hidden=bool(body["showHiddenItems"])
+                    show_hidden=bool(body["showHiddenItems"]),
                 )
                 return {
                     "cwd": fs.file_stats(path=body["path"]),
