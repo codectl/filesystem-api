@@ -118,7 +118,7 @@ class FilesystemAPI:
             if re.match(regex, file.name)
         ]
 
-    def file_stats(self, path):
+    def stats(self, path):
         stats = os.stat(path, follow_symlinks=False)
         p = pathlib.Path(path)
         return {
@@ -141,3 +141,6 @@ class FilesystemAPI:
             os.remove(path)
         elif os.path.isdir(path):
             shutil.rmtree(path)
+
+    def rename(self, path, old_name, new_name):
+        os.rename(os.path.join(path, old_name), os.path.join(path, new_name))

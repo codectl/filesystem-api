@@ -301,13 +301,13 @@ class FilesystemActions(Resource):
                     show_hidden=bool(body["showHiddenItems"]),
                 )
                 return {
-                    "cwd": fs.file_stats(path=body["path"]),
-                    "files": [fs.file_stats(file) for file in files],
+                    "cwd": fs.stats(path=body["path"]),
+                    "files": [fs.stats(file) for file in files],
                 }
             elif body["action"] == "details":
                 stats = []
                 for data in body["data"]:
-                    file_stats = fs.file_stats(os.path.join(body["path"], data["name"]))
+                    file_stats = fs.stats(os.path.join(body["path"], data["name"]))
                     stats.append(file_stats)
 
                 response = {}
@@ -336,7 +336,7 @@ class FilesystemActions(Resource):
                 return {
                     "path": body["path"],
                     "name": body["name"],
-                    "files": [fs.file_stats(os.path.join(body["path"], body["name"]))],
+                    "files": [fs.stats(os.path.join(body["path"], body["name"]))],
                 }
             elif body["action"] == "delete":
                 for name in body["names"]:
@@ -349,6 +349,15 @@ class FilesystemActions(Resource):
                         {"path": os.path.join(body["path"], name)}
                         for name in body["names"]
                     ],
+                }
+            elif body["action"] == "rename":
+                fs.rename(
+                    path=body["path"], old_name=body["name"], new_name=body["newName"]
+                )
+                return {
+                    "path": body["path"],
+                    "name": body["name"],
+                    "files": [fs.stats(os.path.join(body["path"], body["newName"]))],
                 }
 
         except PermissionError:
