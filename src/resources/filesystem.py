@@ -334,8 +334,6 @@ class FilesystemActions(Resource):
             elif body["action"] == "create":
                 fs.create_dir(path=body["path"], name=body["name"])
                 return {
-                    "path": body["path"],
-                    "name": body["name"],
                     "files": [fs.stats(os.path.join(body["path"], body["name"]))],
                 }
             elif body["action"] == "delete":
@@ -344,21 +342,26 @@ class FilesystemActions(Resource):
                     fs.remove_path(path=path)
                 return {
                     "path": body["path"],
-                    "names": body["names"],
                     "files": [
                         {"path": os.path.join(body["path"], name)}
                         for name in body["names"]
                     ],
                 }
             elif body["action"] == "rename":
-                fs.rename(
-                    path=body["path"], old_name=body["name"], new_name=body["newName"]
-                )
+                src = os.path.join(body["path"], body["name"])
+                dst = os.path.join(body["path"], body["newName"])
+                fs.move(src=src, dst=dst)
                 return {
-                    "path": body["path"],
-                    "name": body["name"],
                     "files": [fs.stats(os.path.join(body["path"], body["newName"]))],
                 }
+            elif body["action"] == "move":
+                files = []
+                for name in body["names"]:
+                    path = os.path.join(body["path"], name)
+                    fs.move(src=path, dst=body["targetPath"])
+                    stats = fs.stats(os.path.dirname(body["path"]))
+                    files.append(stats)
+                return {"files": files}
 
         except PermissionError:
             return {"error": {"code": 401, "message": "Permission denied"}}

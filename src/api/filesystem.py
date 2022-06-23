@@ -119,17 +119,19 @@ class FilesystemAPI:
         ]
 
     def stats(self, path):
+        path = os.path.join(os.path.sep, path.strip(os.path.sep))
         stats = os.stat(path, follow_symlinks=False)
-        p = pathlib.Path(path)
+        isdir = os.path.isdir(path)
         return {
             "name": os.path.basename(path),
             "path": path,
+            "filterPath": os.path.join(os.path.dirname(path), ""),
             "size": stats.st_size,
-            "isFile": os.path.isfile(path),
+            "isFile": not isdir,
             "dateModified": datetime.fromtimestamp(stats.st_mtime).isoformat(),
             "dateCreated": datetime.fromtimestamp(stats.st_ctime).isoformat(),
-            "type": p.suffix,
-            "hasChild": bool(next(os.walk(path), ((), ()))[1]) if p.is_dir() else False,
+            "type": pathlib.Path(path).suffix,
+            "hasChild": bool(next(os.walk(path), ((), ()))[1]) if isdir else False,
             "mode": stats.st_mode,
         }
 
@@ -142,5 +144,5 @@ class FilesystemAPI:
         elif os.path.isdir(path):
             shutil.rmtree(path)
 
-    def rename(self, path, old_name, new_name):
-        os.rename(os.path.join(path, old_name), os.path.join(path, new_name))
+    def move(self, src, dst):
+        shutil.move(src, dst)
