@@ -350,30 +350,49 @@ class FilesystemActions(Resource):
             elif body["action"] == "rename":
                 src = os.path.join(body["path"], body["name"])
                 dst = os.path.join(body["path"], body["newName"])
-                fs.move(src=src, dst=dst)
-                return {
-                    "files": [fs.stats(os.path.join(body["path"], body["newName"]))],
-                }
+                if os.path.exists(dst):
+                    return {
+                        "error": {
+                            "code": "400",
+                            "message": f"Cannot rename {body['name']} to {body['newName']}: "
+                            f"destination already exists.",
+                        }
+                    }
+                else:
+                    fs.rename_path(src=src, dst=dst)
+                    return {
+                        "files": [
+                            fs.stats(os.path.join(body["path"], body["newName"]))
+                        ],
+                    }
             elif body["action"] == "move":
                 files = []
+                conflicts = []
                 for name in body["names"]:
-                    path = os.path.join(body["path"], name)
-                    fs.move(src=path, dst=body["targetPath"])
-                    stats = fs.stats(os.path.dirname(body["path"]))
-                    files.append(stats)
-                return {"files": files}
+                    src = body["path"]
+                    dst = body["targetPath"]
+                    if (
+                        os.path.exists(os.path.join(dst, name))
+                        and name not in body["renameFiles"]
+                    ):
+                        conflicts.append(name)
+                    else:
+                        fs.move_path(src=os.path.join(src, name), dst=dst)
+                        stats = fs.stats(os.path.dirname(body["path"]))
+                        files.append(stats)
+                response = {"files": files}
+                if conflicts:
+                    response["error"] = {
+                        "code": 400,
+                        "message": "File Already Exists",
+                        "fileExists": conflicts,
+                    }
+                return response
 
         except PermissionError:
             return {"error": {"code": 401, "message": "Permission denied"}}
         except FileNotFoundError:
             return {"error": {"code": 404, "message": "File not found"}}
-        except FileExistsError:
-            return {
-                "error": {
-                    "code": 400,
-                    "message": f"File \"{body['name']}\" already exists in \""
-                    f"{body['path']}\".",
-                }
-            }
+
         # except Exception as ex:
         #     return {"error": {"code": 400, "message": "Bad request"}}

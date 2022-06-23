@@ -144,5 +144,22 @@ class FilesystemAPI:
         elif os.path.isdir(path):
             shutil.rmtree(path)
 
-    def move(self, src, dst):
+    def move_path(self, src, dst):
+        dst = self.rename_duplicates(dst=dst, filename=os.path.basename(src))
         shutil.move(src, dst)
+
+    def rename_path(self, src, dst):
+        os.rename(src, dst)
+
+    @classmethod
+    def rename_duplicates(cls, dst, filename, count=0):
+        if count > 0:
+            base, extension = os.path.splitext(filename)
+            candidate = f"{base} ({count}){extension}"
+        else:
+            candidate = filename
+        path = os.path.join(dst, candidate)
+        if os.path.exists(path):
+            return cls.rename_duplicates(dst, filename, count + 1)
+        else:
+            return path
