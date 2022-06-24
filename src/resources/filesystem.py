@@ -378,7 +378,7 @@ class FilesystemActions(Resource):
                         conflicts.append(name)
                     else:
                         fs.move_path(src=os.path.join(src, name), dst=dst)
-                        stats = fs.stats(os.path.dirname(body["path"]))
+                        stats = fs.stats(os.path.join(dst, name))
                         files.append(stats)
                 response = {"files": files}
                 if conflicts:
@@ -388,11 +388,19 @@ class FilesystemActions(Resource):
                         "fileExists": conflicts,
                     }
                 return response
+            elif body["action"] == "copy":
+                files = []
+                for name in body["names"]:
+                    src = body["path"]
+                    dst = body["targetPath"]
+                    fs.copy_path(src=os.path.join(src, name), dst=dst)
+                    stats = fs.stats(os.path.join(dst, name))
+                    files.append(stats)
+                return {"files": files}
 
         except PermissionError:
-            return {"error": {"code": 401, "message": "Permission denied"}}
+            return {"error": {"code": 401, "message": "Permission Denied"}}
         except FileNotFoundError:
-            return {"error": {"code": 404, "message": "File not found"}}
-
-        # except Exception as ex:
-        #     return {"error": {"code": 400, "message": "Bad request"}}
+            return {"error": {"code": 404, "message": "File Not Found"}}
+        except Exception as ex:
+            return {"error": {"code": 400, "message": "Bad request"}}

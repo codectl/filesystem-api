@@ -151,11 +151,18 @@ class FilesystemAPI:
     def rename_path(self, src, dst):
         os.rename(src, dst)
 
+    def copy_path(self, src, dst):
+        dst = self.rename_duplicates(dst=dst, filename=os.path.basename(src))
+        if os.path.isdir(src):
+            shutil.copytree(src, dst)
+        else:
+            shutil.copy2(src, dst)
+
     @classmethod
     def rename_duplicates(cls, dst, filename, count=0):
         if count > 0:
             base, extension = os.path.splitext(filename)
-            candidate = f"{base} ({count}){extension}"
+            candidate = f"{base}({count}){extension}"
         else:
             candidate = filename
         path = os.path.join(dst, candidate)
