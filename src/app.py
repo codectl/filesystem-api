@@ -56,7 +56,11 @@ def setup_app(app):
             oas.Tag(
                 name="filesystem",
                 description="CRUD operations over files in the current filesystem",
-            )
+            ),
+            oas.Tag(
+                name="File Manager",
+                description="Actions that serve React component named File Manager",
+            ),
         ],
         responses=[
             utils.http_response(code=400, serialize=False),
