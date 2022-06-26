@@ -1,172 +1,239 @@
-from datetime import datetime
-import os
-import pathlib
-import re
-import shutil
-import subprocess
-
-from werkzeug.utils import secure_filename
+from flask import Blueprint, jsonify, request, send_file
+from flask_restful import Api, Resource
+from http.client import HTTPException
 
 from src import utils
+from src.services.filesystem import FilesystemSvc
+from src.api.auth import current_username, requires_auth
 
-__all__ = ("FilesystemAPI",)
-
-
-class user_ctx:
-    def __init__(self, username):
-        self.username = username
-        self.uid = os.getuid()
-        self.gid = os.getuid()
-
-    def __enter__(self):
-        os.setuid(utils.user_uid(self.username))
-        os.setgid(utils.user_gid(self.username))
-
-    def __exit__(self, exc_type, exc_value, exc_traceback):
-        os.setuid(self.uid)
-        os.setgid(self.gid)
+blueprint = Blueprint("filesystem", __name__)
+api = Api(blueprint)
 
 
-class FilesystemAPI:
-    def __init__(self, username=None):
-        self.username = str(username) if username else None
+@api.resource("/<path:path>", endpoint="fs")
+class Filesystem(Resource):
+    @requires_auth(schemes=["basic"])
+    def get(self, path):
+        """
+        List files in given path.
+        ---
+        parameters:
+        - in: path
+          name: path
+          schema:
+            type: string
+          required: true
+          description: the path to list content from
+        tags:
+            - filesystem
+        security:
+            - BasicAuth: []
+        responses:
+            200:
+                description: Ok
+                content:
+                    application/json:
+                        schema:
+                            type: array
+                            items:
+                                type: string
+                    application/octet-stream:
+                        schema:
+                            type: string
+                            format: binary
+            400:
+                $ref: "#/components/responses/BadRequest"
+            401:
+                $ref: "#/components/responses/Unauthorized"
+            403:
+                $ref: "#/components/responses/Forbidden"
+            404:
+                $ref: "#/components/responses/NotFound"
+        """
+        path = utils.normpath(path)
+        username = current_username
+        fs = FilesystemSvc(username=username)
+        try:
+            accept = request.headers.get("accept", "application/json")
+            if accept == "application/json":
+                return jsonify(fs.list_files(path=path))
+            elif accept == "application/octet-stream":
+                stats = fs.list_files(path=path, flags="-dlL")[0]
+                mode = utils.file_mode(stats=stats)
+                name, content = fs.attachment(path=path, mode=mode)
+                return send_file(content, attachment_filename=name, as_attachment=True)
+            raise HTTPException("unsupported 'accept' HTTP header")
 
-    # def list_files(self, path, flags=""):
-    #     return self._run(cmd=f"ls {flags} {path}", user=self.username)
-    #
-    # def attachment(self, path, mode=None) -> (str, bytes):
-    #     """Get attachable file tuple consisting of name and bytes content."""
-    #     path = utils.normpath(path)
-    #     if utils.isfile(mode):
-    #         cmd = f"cat {path}"
-    #         stream = self._run(cmd=cmd, user=self.username, universal_newlines=False)
-    #         filename = os.path.basename(path)
-    #         content = io.BytesIO(stream)
-    #         return filename, content
-    #     elif utils.isdir(mode):
-    #         archive_dir = os.path.dirname(path)
-    #         archive_name = os.path.basename(path)
-    #         cmd = f"tar -cvpf - -C {archive_dir} {archive_name}"
-    #         stream = self._run(cmd=cmd, user=self.username, universal_newlines=False)
-    #         filename = f"{os.path.basename(path)}.tar.gz"
-    #         content = io.BytesIO(stream)
-    #         return filename, content
-    #
-    #     raise ValueError("unsupported file mode")
+        except PermissionError as ex:
+            utils.abort_with(code=403, message=str(ex))
+        except FileNotFoundError as ex:
+            utils.abort_with(code=404, message=str(ex))
+        except Exception as ex:
+            utils.abort_with(code=400, message=str(ex))
 
-    # def upload_files(self, path, files=(), update=False):
-    #     """Upload given files to the specified path ensuring
-    #     files do not already exist.
-    #     """
-    #     path = f"{utils.normpath(path)}/"
-    #     path_files = self.list_files(path)
-    #     for file in files:
-    #         filename = secure_filename(file.filename)
-    #         if update and filename not in path_files:
-    #             raise FileNotFoundError("file does not exist")
-    #         elif not update and filename in path_files:
-    #             raise FileExistsError("file already exists")
-    #
-    #     for file in files:
-    #         filename = secure_filename(file.filename)
-    #         dst = f"{path}/{filename}"
-    #         self._run(
-    #             cmd=f"tee {dst}",
-    #             stdin=file,
-    #             stdout=subprocess.DEVNULL,
-    #             user=self.username,
-    #         )
-    #
-    # def delete_file(self, path):
-    #     self._run(
-    #         cmd=f"rm {path}",
-    #         stdout=subprocess.DEVNULL,
-    #         user=self.username,
-    #     )
+    @requires_auth(schemes=["basic"])
+    def post(self, path):
+        """
+        Create files in given path.
+        ---
+        parameters:
+        - in: path
+          name: path
+          schema:
+            type: string
+          required: true
+          description: the directory to create the resource at
+        tags:
+            - filesystem
+        security:
+            - BasicAuth: []
+        requestBody:
+            content:
+                multipart/form-data:
+                    schema:
+                        type: object
+                        required: [files]
+                        properties:
+                            files:
+                                type: array
+                                items:
+                                    type: file
+                                    description: file to create
+        responses:
+            201:
+                content:
+                    application/json:
+                        schema:
+                            "$ref": "#/components/schemas/HttpResponse"
 
-    # @classmethod
-    # def _run(cls, cmd, **kwargs):
-    #     try:
-    #         stdout = utils.shell(cmd, **kwargs)
-    #     except subprocess.CalledProcessError as ex:
-    #         cls.raise_error(ex.stderr)
-    #     else:
-    #         return stdout.splitlines() if isinstance(stdout, str) else stdout
-    #
-    # @staticmethod
-    # def raise_error(stderr):
-    #     err = stderr.split(":")[-1].strip().lower()
-    #     if err == "no such file or directory":
-    #         raise FileNotFoundError(err)
-    #     elif err == "permission denied":
-    #         raise PermissionError(err)
-    #     elif err == "is a directory":
-    #         raise IsADirectoryError(err)
-    #     elif err == "not a directory":
-    #         raise NotADirectoryError(err)
-    #     else:
-    #         raise Exception(err)
+            400:
+                $ref: "#/components/responses/BadRequest"
+            401:
+                $ref: "#/components/responses/Unauthorized"
+            403:
+                $ref: "#/components/responses/Forbidden"
+            404:
+                $ref: "#/components/responses/NotFound"
+        """
+        path = utils.normpath(path)
+        username = current_username
+        fs = FilesystemSvc(username=username)
+        files = request.files.to_dict(flat=False).get("files", [])
+        if not files:
+            utils.abort_with(code=400, message="missing files")
 
-    def list_files(self, path, show_hidden=False, substr=None):
-        regex = rf".*{(substr or '').strip('*')}.*"
-        if not show_hidden:
-            regex = "".join((r"^(?!\.)", regex))
+        try:
+            fs.upload_files(path=path, files=files)
+            return utils.http_response(201), 201
+        except PermissionError as ex:
+            utils.abort_with(code=403, message=str(ex))
+        except FileNotFoundError as ex:
+            utils.abort_with(code=404, message=str(ex))
+        except Exception as ex:
+            utils.abort_with(code=400, message=str(ex))
 
-        return [
-            os.path.join(path, file.name)
-            for file in iter(os.scandir(path=path))
-            if re.match(regex, file.name)
-        ]
+    @requires_auth(schemes=["basic"])
+    def put(self, path):
+        """
+        Update files in given path.
+        ---
+        parameters:
+        - in: path
+          name: path
+          schema:
+            type: string
+          required: true
+          description: the directory to update the resource at
+        tags:
+            - filesystem
+        security:
+            - BasicAuth: []
+        requestBody:
+            content:
+                multipart/form-data:
+                    schema:
+                        type: object
+                        required: [files]
+                        properties:
+                            files:
+                                type: array
+                                items:
+                                    type: file
+                                    description: file to update
+        responses:
+            204:
+                content:
+                    application/json:
+                        schema:
+                            "$ref": "#/components/schemas/HttpResponse"
 
-    def stats(self, path):
-        path = os.path.join(os.path.sep, path.strip(os.path.sep))
-        stats = os.stat(path, follow_symlinks=False)
-        isdir = os.path.isdir(path)
-        return {
-            "name": os.path.basename(path),
-            "path": path,
-            "filterPath": os.path.join(os.path.dirname(path), ""),
-            "size": stats.st_size,
-            "isFile": not isdir,
-            "dateModified": datetime.fromtimestamp(stats.st_mtime).isoformat(),
-            "dateCreated": datetime.fromtimestamp(stats.st_ctime).isoformat(),
-            "type": pathlib.Path(path).suffix,
-            "hasChild": bool(next(os.walk(path), ((), ()))[1]) if isdir else False,
-            "mode": stats.st_mode,
-        }
+            400:
+                $ref: "#/components/responses/BadRequest"
+            401:
+                $ref: "#/components/responses/Unauthorized"
+            403:
+                $ref: "#/components/responses/Forbidden"
+            404:
+                $ref: "#/components/responses/NotFound"
+        """
+        path = utils.normpath(path)
+        username = current_username
+        fs = FilesystemSvc(username=username)
+        files = request.files.to_dict(flat=False).get("files", [])
+        if not files:
+            utils.abort_with(code=400, message="missing files")
 
-    def create_dir(self, path, name):
-        os.mkdir(os.path.join(path, name))
+        try:
+            fs.upload_files(path=path, files=files, update=True)
+            return utils.http_response(204), 204
+        except PermissionError as ex:
+            utils.abort_with(code=403, message=str(ex))
+        except FileNotFoundError as ex:
+            utils.abort_with(code=404, message=str(ex))
+        except Exception as ex:
+            utils.abort_with(code=400, message=str(ex))
 
-    def remove_path(self, path):
-        if os.path.isfile(path) or os.path.islink(path):
-            os.remove(path)
-        elif os.path.isdir(path):
-            shutil.rmtree(path)
+    @requires_auth(schemes=["basic"])
+    def delete(self, path):
+        """
+        Delete file in given path.
+        ---
+        parameters:
+        - in: path
+          name: path
+          schema:
+            type: string
+          required: true
+          description: the path of the file
+        tags:
+            - filesystem
+        security:
+            - BasicAuth: []
+        responses:
+            204:
+                content:
+                    application/json:
+                        schema:
+                            "$ref": "#/components/schemas/HttpResponse"
 
-    def move_path(self, src, dst):
-        dst = self.rename_duplicates(dst=dst, filename=os.path.basename(src))
-        shutil.move(src, dst)
-
-    def rename_path(self, src, dst):
-        os.rename(src, dst)
-
-    def copy_path(self, src, dst):
-        dst = self.rename_duplicates(dst=dst, filename=os.path.basename(src))
-        if os.path.isdir(src):
-            shutil.copytree(src, dst)
-        else:
-            shutil.copy2(src, dst)
-
-    @classmethod
-    def rename_duplicates(cls, dst, filename, count=0):
-        if count > 0:
-            base, extension = os.path.splitext(filename)
-            candidate = f"{base}({count}){extension}"
-        else:
-            candidate = filename
-        path = os.path.join(dst, candidate)
-        if os.path.exists(path):
-            return cls.rename_duplicates(dst, filename, count + 1)
-        else:
-            return path
+            400:
+                $ref: "#/components/responses/BadRequest"
+            401:
+                $ref: "#/components/responses/Unauthorized"
+            403:
+                $ref: "#/components/responses/Forbidden"
+            404:
+                $ref: "#/components/responses/NotFound"
+        """
+        path = utils.normpath(path)
+        username = current_username
+        fs = FilesystemSvc(username=username)
+        try:
+            fs.delete_file(path=path)
+            return utils.http_response(204), 204
+        except PermissionError as ex:
+            utils.abort_with(code=403, message=str(ex))
+        except FileNotFoundError as ex:
+            utils.abort_with(code=404, message=str(ex))
+        except Exception as ex:
+            utils.abort_with(code=400, message=str(ex))

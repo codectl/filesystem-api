@@ -6,8 +6,8 @@ from flask_restful import Api, Resource
 from http.client import HTTPException
 
 from src import utils
-from src.api.filesystem import FilesystemAPI
-from src.resources.auth import current_username, requires_auth
+from src.services.file_manager import FileManagerSvc
+from src.api.auth import current_username, requires_auth
 
 blueprint = Blueprint("file_manager", __name__, url_prefix="/file-manager")
 api = Api(blueprint)
@@ -26,7 +26,7 @@ class FileManagerActions(Resource):
         tags:
             - File Manager
         responses:
-            201:
+            200:
                 content:
                     application/json:
                         schema:
@@ -42,22 +42,22 @@ class FileManagerActions(Resource):
                 $ref: "#/components/responses/NotFound"
         """
         body = request.json
-        fs = FilesystemAPI(username=None)
+        fm = FileManagerSvc(username=None)
         try:
             if body["action"] in ["read", "search"]:
-                files = fs.list_files(
+                files = fm.list_files(
                     path=body["path"],
                     substr=body.get("searchString"),
                     show_hidden=bool(body["showHiddenItems"]),
                 )
                 return {
-                    "cwd": fs.stats(path=body["path"]),
-                    "files": [fs.stats(file) for file in files],
+                    "cwd": fm.stats(path=body["path"]),
+                    "files": [fm.stats(file) for file in files],
                 }
             elif body["action"] == "details":
                 stats = []
                 for data in body["data"]:
-                    file_stats = fs.stats(data["path"])
+                    file_stats = fm.stats(data["path"])
                     stats.append(file_stats)
 
                 response = {}
@@ -82,14 +82,14 @@ class FileManagerActions(Resource):
                     response["multipleFiles"] = True
                 return {"details": response}
             elif body["action"] == "create":
-                fs.create_dir(path=body["path"], name=body["name"])
+                fm.create_dir(path=body["path"], name=body["name"])
                 return {
-                    "files": [fs.stats(os.path.join(body["path"], body["name"]))],
+                    "files": [fm.stats(os.path.join(body["path"], body["name"]))],
                 }
             elif body["action"] == "delete":
                 for name in body["names"]:
                     path = os.path.join(body["path"], name)
-                    fs.remove_path(path=path)
+                    fm.remove_path(path=path)
                 return {
                     "path": body["path"],
                     "files": [
@@ -109,10 +109,10 @@ class FileManagerActions(Resource):
                         }
                     }
                 else:
-                    fs.rename_path(src=src, dst=dst)
+                    fm.rename_path(src=src, dst=dst)
                     return {
                         "files": [
-                            fs.stats(os.path.join(body["path"], body["newName"]))
+                            fm.stats(os.path.join(body["path"], body["newName"]))
                         ],
                     }
             elif body["action"] == "move":
@@ -127,8 +127,8 @@ class FileManagerActions(Resource):
                     ):
                         conflicts.append(name)
                     else:
-                        fs.move_path(src=os.path.join(src, name), dst=dst)
-                        stats = fs.stats(os.path.join(dst, name))
+                        fm.move_path(src=os.path.join(src, name), dst=dst)
+                        stats = fm.stats(os.path.join(dst, name))
                         files.append(stats)
                 response = {"files": files}
                 if conflicts:
@@ -143,8 +143,8 @@ class FileManagerActions(Resource):
                 for name in body["names"]:
                     src = body["path"]
                     dst = body["targetPath"]
-                    fs.copy_path(src=os.path.join(src, name), dst=dst)
-                    stats = fs.stats(os.path.join(dst, name))
+                    fm.copy_path(src=os.path.join(src, name), dst=dst)
+                    stats = fm.stats(os.path.join(dst, name))
                     files.append(stats)
                 return {"files": files}
 
@@ -159,8 +159,9 @@ class FileManagerActions(Resource):
 @api.resource("/download", endpoint="fm_download")
 class FileManagerDownload(Resource):
     # @requires_auth(schemes=["basic"])
-    def options(self):
-        return utils.http_response(200), 200
+    # def options(self):
+    #     return utils.http_response(200), 200
 
     def post(self):
-        pass
+        body = request.json
+        fm = FileManagerSvc(username=None)

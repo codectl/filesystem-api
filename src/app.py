@@ -7,7 +7,7 @@ from flask_cors import CORS
 from werkzeug.exceptions import HTTPException
 
 from src import __meta__, __version__, utils
-from src.resources.filesystem import blueprint as filesystem
+from src.api.filesystem import blueprint as filesystem
 from src.settings import oas
 from src.settings.env import config_class, load_dotenv
 
