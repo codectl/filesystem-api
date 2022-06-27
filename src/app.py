@@ -7,7 +7,7 @@ from flask_cors import CORS
 from werkzeug.exceptions import HTTPException
 
 from src import __meta__, __version__, utils
-from src.api.filesystem import blueprint as filesystem
+from src.api.file_manager import blueprint as fm
 from src.settings import oas
 from src.settings.env import config_class, load_dotenv
 
@@ -37,7 +37,7 @@ def setup_app(app):
 
     # initial blueprint wiring
     index = Blueprint("index", __name__)
-    index.register_blueprint(filesystem)
+    index.register_blueprint(fm)
     app.register_blueprint(index, url_prefix=url_prefix)
 
     # base template for OpenAPI specs

@@ -1,4 +1,4 @@
-import operator as op
+import json
 import os
 
 from flask import Blueprint, jsonify, request, send_file
@@ -42,22 +42,22 @@ class FileManagerActions(Resource):
                 $ref: "#/components/responses/NotFound"
         """
         body = request.json
-        fm = FileManagerSvc(username=None)
+        svc = FileManagerSvc(username=None)
         try:
             if body["action"] in ["read", "search"]:
-                files = fm.list_files(
+                files = svc.list_files(
                     path=body["path"],
                     substr=body.get("searchString"),
                     show_hidden=bool(body["showHiddenItems"]),
                 )
                 return {
-                    "cwd": fm.stats(path=body["path"]),
-                    "files": [fm.stats(file) for file in files],
+                    "cwd": svc.stats(path=body["path"]),
+                    "files": [svc.stats(file) for file in files],
                 }
             elif body["action"] == "details":
                 stats = []
                 for data in body["data"]:
-                    file_stats = fm.stats(data["path"])
+                    file_stats = svc.stats(data["path"])
                     stats.append(file_stats)
 
                 response = {}
@@ -82,14 +82,14 @@ class FileManagerActions(Resource):
                     response["multipleFiles"] = True
                 return {"details": response}
             elif body["action"] == "create":
-                fm.create_dir(path=body["path"], name=body["name"])
+                svc.create_dir(path=body["path"], name=body["name"])
                 return {
-                    "files": [fm.stats(os.path.join(body["path"], body["name"]))],
+                    "files": [svc.stats(os.path.join(body["path"], body["name"]))],
                 }
             elif body["action"] == "delete":
                 for name in body["names"]:
                     path = os.path.join(body["path"], name)
-                    fm.remove_path(path=path)
+                    svc.remove_path(path=path)
                 return {
                     "path": body["path"],
                     "files": [
@@ -109,10 +109,10 @@ class FileManagerActions(Resource):
                         }
                     }
                 else:
-                    fm.rename_path(src=src, dst=dst)
+                    svc.rename_path(src=src, dst=dst)
                     return {
                         "files": [
-                            fm.stats(os.path.join(body["path"], body["newName"]))
+                            svc.stats(os.path.join(body["path"], body["newName"]))
                         ],
                     }
             elif body["action"] == "move":
@@ -127,8 +127,8 @@ class FileManagerActions(Resource):
                     ):
                         conflicts.append(name)
                     else:
-                        fm.move_path(src=os.path.join(src, name), dst=dst)
-                        stats = fm.stats(os.path.join(dst, name))
+                        svc.move_path(src=os.path.join(src, name), dst=dst)
+                        stats = svc.stats(os.path.join(dst, name))
                         files.append(stats)
                 response = {"files": files}
                 if conflicts:
@@ -143,8 +143,8 @@ class FileManagerActions(Resource):
                 for name in body["names"]:
                     src = body["path"]
                     dst = body["targetPath"]
-                    fm.copy_path(src=os.path.join(src, name), dst=dst)
-                    stats = fm.stats(os.path.join(dst, name))
+                    svc.copy_path(src=os.path.join(src, name), dst=dst)
+                    stats = svc.stats(os.path.join(dst, name))
                     files.append(stats)
                 return {"files": files}
 
@@ -158,10 +158,22 @@ class FileManagerActions(Resource):
 
 @api.resource("/download", endpoint="fm_download")
 class FileManagerDownload(Resource):
-    # @requires_auth(schemes=["basic"])
-    # def options(self):
-    #     return utils.http_response(200), 200
-
     def post(self):
-        body = request.json
-        fm = FileManagerSvc(username=None)
+        body = json.loads(request.form["downloadInput"])
+        svc = FileManagerSvc(username=None)
+        data = body["data"]
+        if len(data) == 1:
+            obj = data[0]
+            path = obj["path"]
+            if os.path.isfile(path):
+                return send_file(path, as_attachment=True)
+
+        paths = (d["path"] for d in data)
+        tarfile = svc.create_attachment(paths=paths)
+        filename = f"{'files' if len(data) > 1 else data[0]['name']}.tar.gz"
+        return send_file(
+            tarfile,
+            as_attachment=True,
+            mimetype="application/gzip",
+            download_name=filename,
+        )

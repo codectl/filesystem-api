@@ -61,7 +61,7 @@ class Filesystem(Resource):
                 stats = fs.list_files(path=path, flags="-dlL")[0]
                 mode = utils.file_mode(stats=stats)
                 name, content = fs.attachment(path=path, mode=mode)
-                return send_file(content, attachment_filename=name, as_attachment=True)
+                return send_file(content, as_attachment=True)
             raise HTTPException("unsupported 'accept' HTTP header")
 
         except PermissionError as ex:
