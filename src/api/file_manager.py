@@ -16,10 +16,6 @@ api = Api(blueprint)
 
 @api.resource("/actions", endpoint="fm_actions")
 class FileManagerActions(Resource):
-    # @requires_auth(schemes=["basic"])
-    def options(self):
-        return utils.http_response(200), 200
-
     def post(self):
         """
         Use request body to specify intended action on given path.
