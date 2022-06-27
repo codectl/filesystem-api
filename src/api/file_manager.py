@@ -197,3 +197,21 @@ class FileManagerUpload(Resource):
             return utils.http_response(200), 200
         except OSError:
             return {"error": {"code": 400, "message": "Bad request"}}
+
+
+@api.resource("/images", endpoint="fm_images")
+class FileManagerImages(Resource):
+    def get(self, path):
+        path = os.path.join(os.path.sep, path)
+        svc = FileManagerSvc(username=None)
+        try:
+            if svc.exists_path(path):
+                return send_file(path, mimetype="image/jpg")
+            else:
+                raise FileNotFoundError
+        except PermissionError:
+            return utils.abort_with(401)
+        except FileNotFoundError:
+            return utils.abort_with(404)
+        except OSError:
+            return utils.abort_with(400)
