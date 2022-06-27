@@ -155,7 +155,7 @@ class FileManagerActions(Resource):
             return {"error": {"code": 401, "message": "Permission Denied"}}
         except FileNotFoundError:
             return {"error": {"code": 404, "message": "File Not Found"}}
-        except (Exception,):
+        except OSError:
             return {"error": {"code": 400, "message": "Bad request"}}
 
 
@@ -192,12 +192,12 @@ class FileManagerUpload(Resource):
                 file = request.files["uploadFiles"]
                 filename = secure_filename(file.filename)
                 file.save(os.path.join(body["path"], filename))
-                return utils.http_response(200), 200
             elif body["action"] == "remove":
                 path = os.path.join(body["path"], body["cancel-uploading"])
                 if svc.exists_path(path):
                     svc.remove_path(path)
             else:
                 raise ValueError
-        except (Exception,):
+            return utils.http_response(200), 200
+        except OSError:
             return {"error": {"code": 400, "message": "Bad request"}}
