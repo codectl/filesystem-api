@@ -61,6 +61,9 @@ class FileManagerSvc:
     def create_dir(self, path, name):
         os.mkdir(os.path.join(path, name))
 
+    def exists_path(self, path):
+        return os.path.exists(path)
+
     def remove_path(self, path):
         if os.path.isfile(path) or os.path.islink(path):
             os.remove(path)

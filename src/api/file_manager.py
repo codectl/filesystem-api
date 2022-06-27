@@ -4,6 +4,7 @@ import os
 from flask import Blueprint, jsonify, request, send_file
 from flask_restful import Api, Resource
 from http.client import HTTPException
+from werkzeug.utils import secure_filename
 
 from src import utils
 from src.services.file_manager import FileManagerSvc
@@ -100,7 +101,7 @@ class FileManagerActions(Resource):
             elif body["action"] == "rename":
                 src = os.path.join(body["path"], body["name"])
                 dst = os.path.join(body["path"], body["newName"])
-                if os.path.exists(dst):
+                if svc.exists_path(dst):
                     return {
                         "error": {
                             "code": "400",
@@ -122,7 +123,7 @@ class FileManagerActions(Resource):
                     src = body["path"]
                     dst = body["targetPath"]
                     if (
-                        os.path.exists(os.path.join(dst, name))
+                        svc.exists_path(os.path.join(dst, name))
                         and name not in body["renameFiles"]
                     ):
                         conflicts.append(name)
@@ -147,12 +148,14 @@ class FileManagerActions(Resource):
                     stats = svc.stats(os.path.join(dst, name))
                     files.append(stats)
                 return {"files": files}
+            else:
+                raise ValueError
 
         except PermissionError:
             return {"error": {"code": 401, "message": "Permission Denied"}}
         except FileNotFoundError:
             return {"error": {"code": 404, "message": "File Not Found"}}
-        except Exception as ex:
+        except (Exception,):
             return {"error": {"code": 400, "message": "Bad request"}}
 
 
@@ -177,3 +180,24 @@ class FileManagerDownload(Resource):
             mimetype="application/gzip",
             download_name=filename,
         )
+
+
+@api.resource("/upload", endpoint="fm_upload")
+class FileManagerUpload(Resource):
+    def post(self):
+        body = request.form
+        svc = FileManagerSvc(username=None)
+        try:
+            if body["action"] == "save":
+                file = request.files["uploadFiles"]
+                filename = secure_filename(file.filename)
+                file.save(os.path.join(body["path"], filename))
+                return utils.http_response(200), 200
+            elif body["action"] == "remove":
+                path = os.path.join(body["path"], body["cancel-uploading"])
+                if svc.exists_path(path):
+                    svc.remove_path(path)
+            else:
+                raise ValueError
+        except (Exception,):
+            return {"error": {"code": 400, "message": "Bad request"}}
