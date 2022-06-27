@@ -201,8 +201,8 @@ class FileManagerUpload(Resource):
 
 @api.resource("/images", endpoint="fm_images")
 class FileManagerImages(Resource):
-    def get(self, path):
-        path = os.path.join(os.path.sep, path)
+    def get(self):
+        path = os.path.join(os.path.sep, request.args.get("path", ""))
         svc = FileManagerSvc(username=None)
         try:
             if svc.exists_path(path):
