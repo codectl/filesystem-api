@@ -9,7 +9,8 @@ from werkzeug.utils import secure_filename
 from src import utils
 from src.api.auth import current_username, requires_auth
 from src.services.file_manager import FileManagerSvc
-from src.schemas.serlializers.responses import FileManagerDataSchema
+from src.schemas.serlializers.filemgr import FileMgrErrorSchema, FileMgrStatsSchema
+from src.schemas.deserializers.filemgr import FileMgrRequest
 
 blueprint = Blueprint("file_manager", __name__, url_prefix="/file-manager")
 api = Api(blueprint)
@@ -29,7 +30,8 @@ class FileManagerActions(Resource):
                     application/json:
                         schema:
                             oneOf:
-                                - FileManagerDataSchema
+                                - FileMgrStatsSchema
+                                - FileMgrErrorSchema
         """
         body = request.json
         svc = FileManagerSvc(username=None)
@@ -44,6 +46,40 @@ class FileManagerActions(Resource):
                     "cwd": svc.stats(path=body["path"]),
                     "files": [svc.stats(file) for file in files],
                 }
+            elif body["action"] == "create":
+                svc.create_dir(path=body["path"], name=body["name"])
+                return {
+                    "files": [svc.stats(os.path.join(body["path"], body["name"]))],
+                }
+            elif body["action"] == "delete":
+                for name in body["names"]:
+                    path = os.path.join(body["path"], name)
+                    svc.remove_path(path=path)
+                return {
+                    "path": body["path"],
+                    "files": [
+                        {"path": os.path.join(body["path"], name)}
+                        for name in body["names"]
+                    ],
+                }
+            elif body["action"] == "rename":
+                src = os.path.join(body["path"], body["name"])
+                dst = os.path.join(body["path"], body["newName"])
+                if svc.exists_path(dst):
+                    return {
+                        "error": {
+                            "code": "400",
+                            "message": f"Cannot rename {body['name']} to {body['newName']}: "
+                            f"destination already exists.",
+                        }
+                    }
+                else:
+                    svc.rename_path(src=src, dst=dst)
+                    return {
+                        "files": [
+                            svc.stats(os.path.join(body["path"], body["newName"]))
+                        ],
+                    }
             elif body["action"] == "details":
                 stats = []
                 for data in body["data"]:
@@ -71,40 +107,15 @@ class FileManagerActions(Resource):
                     response["isFile"] = False
                     response["multipleFiles"] = True
                 return {"details": response}
-            elif body["action"] == "create":
-                svc.create_dir(path=body["path"], name=body["name"])
-                return {
-                    "files": [svc.stats(os.path.join(body["path"], body["name"]))],
-                }
-            elif body["action"] == "delete":
+            elif body["action"] == "copy":
+                files = []
                 for name in body["names"]:
-                    path = os.path.join(body["path"], name)
-                    svc.remove_path(path=path)
-                return {
-                    "path": body["path"],
-                    "files": [
-                        {"path": os.path.join(body["path"], name)}
-                        for name in body["names"]
-                    ],
-                }
-            elif body["action"] == "rename":
-                src = os.path.join(body["path"], body["name"])
-                dst = os.path.join(body["path"], body["newName"])
-                if svc.exists_path(dst):
-                    return {
-                        "error": {
-                            "code": "400",
-                            "message": f"Cannot rename {body['name']} to {body['newName']}: "
-                                       f"destination already exists.",
-                        }
-                    }
-                else:
-                    svc.rename_path(src=src, dst=dst)
-                    return {
-                        "files": [
-                            svc.stats(os.path.join(body["path"], body["newName"]))
-                        ],
-                    }
+                    src = body["path"]
+                    dst = body["targetPath"]
+                    svc.copy_path(src=os.path.join(src, name), dst=dst)
+                    stats = svc.stats(os.path.join(dst, name))
+                    files.append(stats)
+                return {"files": files}
             elif body["action"] == "move":
                 files = []
                 conflicts = []
@@ -112,8 +123,8 @@ class FileManagerActions(Resource):
                     src = body["path"]
                     dst = body["targetPath"]
                     if (
-                            svc.exists_path(os.path.join(dst, name))
-                            and name not in body["renameFiles"]
+                        svc.exists_path(os.path.join(dst, name))
+                        and name not in body["renameFiles"]
                     ):
                         conflicts.append(name)
                     else:
@@ -128,15 +139,6 @@ class FileManagerActions(Resource):
                         "fileExists": conflicts,
                     }
                 return response
-            elif body["action"] == "copy":
-                files = []
-                for name in body["names"]:
-                    src = body["path"]
-                    dst = body["targetPath"]
-                    svc.copy_path(src=os.path.join(src, name), dst=dst)
-                    stats = svc.stats(os.path.join(dst, name))
-                    files.append(stats)
-                return {"files": files}
             else:
                 raise ValueError
 
