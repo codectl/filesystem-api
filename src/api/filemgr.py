@@ -7,8 +7,9 @@ from http.client import HTTPException
 from werkzeug.utils import secure_filename
 
 from src import utils
-from src.services.file_manager import FileManagerSvc
 from src.api.auth import current_username, requires_auth
+from src.services.file_manager import FileManagerSvc
+from src.schemas.serlializers.responses import FileManagerDataSchema
 
 blueprint = Blueprint("file_manager", __name__, url_prefix="/file-manager")
 api = Api(blueprint)
@@ -27,16 +28,8 @@ class FileManagerActions(Resource):
                 content:
                     application/json:
                         schema:
-                            "$ref": "#/components/schemas/HttpResponse"
-
-            400:
-                $ref: "#/components/responses/BadRequest"
-            401:
-                $ref: "#/components/responses/Unauthorized"
-            403:
-                $ref: "#/components/responses/Forbidden"
-            404:
-                $ref: "#/components/responses/NotFound"
+                            oneOf:
+                                - FileManagerDataSchema
         """
         body = request.json
         svc = FileManagerSvc(username=None)
@@ -102,7 +95,7 @@ class FileManagerActions(Resource):
                         "error": {
                             "code": "400",
                             "message": f"Cannot rename {body['name']} to {body['newName']}: "
-                            f"destination already exists.",
+                                       f"destination already exists.",
                         }
                     }
                 else:
@@ -119,8 +112,8 @@ class FileManagerActions(Resource):
                     src = body["path"]
                     dst = body["targetPath"]
                     if (
-                        svc.exists_path(os.path.join(dst, name))
-                        and name not in body["renameFiles"]
+                            svc.exists_path(os.path.join(dst, name))
+                            and name not in body["renameFiles"]
                     ):
                         conflicts.append(name)
                     else:
