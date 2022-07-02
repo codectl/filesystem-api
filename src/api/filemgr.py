@@ -4,13 +4,14 @@ import os
 from flask import Blueprint, jsonify, request, send_file
 from flask_restful import Api, Resource
 from http.client import HTTPException
+from marshmallow import EXCLUDE
 from werkzeug.utils import secure_filename
 
 from src import utils
 from src.api.auth import current_username, requires_auth
 from src.services.file_manager import FileManagerSvc
-from src.schemas.serlializers.filemgr import FileMgrErrorSchema, FileMgrStatsSchema
-from src.schemas.deserializers.filemgr import FileMgrRequest
+from src.schemas.deserializers import filemgr as dsl
+from src.schemas.serlializers import filemgr as sl
 
 blueprint = Blueprint("file_manager", __name__, url_prefix="/file-manager")
 api = Api(blueprint)
@@ -33,56 +34,79 @@ class FileManagerActions(Resource):
                                 - FileMgrStatsSchema
                                 - FileMgrErrorSchema
         """
-        body = request.json
+        payload = request.json
+        base_schema = dsl.BaseActionSchema
+        opts = {"unknown": EXCLUDE}
+        errors = base_schema(only=("action",), **opts).validate(payload)
+        if errors:
+            return {"error": {"code": 400, "message": json.dumps(errors)}}
+
         svc = FileManagerSvc(username=None)
+
         try:
-            if body["action"] in ["read", "search"]:
+            if payload["action"] == "read":
+                req = dsl.ReadActionSchema(unknown=EXCLUDE).load(payload)
                 files = svc.list_files(
-                    path=body["path"],
-                    substr=body.get("searchString"),
-                    show_hidden=bool(body["showHiddenItems"]),
+                    path=req["path"],
+                    show_hidden=req["showHiddenItems"],
                 )
-                return {
-                    "cwd": svc.stats(path=body["path"]),
-                    "files": [svc.stats(file) for file in files],
-                }
-            elif body["action"] == "create":
-                svc.create_dir(path=body["path"], name=body["name"])
-                return {
-                    "files": [svc.stats(os.path.join(body["path"], body["name"]))],
-                }
-            elif body["action"] == "delete":
-                for name in body["names"]:
-                    path = os.path.join(body["path"], name)
+                return sl.ResponseSchema().dump(
+                    {
+                        "cwd": svc.stats(path=payload["path"]),
+                        "files": [svc.stats(file) for file in files],
+                    }
+                )
+            elif payload["action"] == "create":
+                req = dsl.CreateActionSchema().load(payload)
+                svc.create_dir(path=req["path"], name=req["name"])
+                return sl.ResponseSchema().dump(
+                    {
+                        "files": [svc.stats(os.path.join(req["path"], req["name"]))],
+                    }
+                )
+            elif payload["action"] == "delete":
+                req = dsl.DeleteActionSchema().load(payload)
+                for name in req["names"]:
+                    path = os.path.join(req["path"], name)
                     svc.remove_path(path=path)
-                return {
-                    "path": body["path"],
-                    "files": [
-                        {"path": os.path.join(body["path"], name)}
-                        for name in body["names"]
-                    ],
-                }
-            elif body["action"] == "rename":
-                src = os.path.join(body["path"], body["name"])
-                dst = os.path.join(body["path"], body["newName"])
+                return sl.ResponseSchema().dump(
+                    {
+                        "files": [
+                            {"path": os.path.join(payload["path"], name)}
+                            for name in payload["names"]
+                        ],
+                    }
+                )
+            elif payload["action"] == "rename":
+                req = dsl.RenameActionSchema().load(payload)
+                src = os.path.join(req["path"], req["name"])
+                dst = os.path.join(req["path"], req["newName"])
                 if svc.exists_path(dst):
+                    msg = f"Cannot rename {req['name']} to {req['newName']}: destination already exists."
                     return {
                         "error": {
                             "code": "400",
-                            "message": f"Cannot rename {body['name']} to {body['newName']}: "
-                            f"destination already exists.",
+                            "message": msg,
                         }
                     }
                 else:
                     svc.rename_path(src=src, dst=dst)
                     return {
-                        "files": [
-                            svc.stats(os.path.join(body["path"], body["newName"]))
-                        ],
+                        "files": [svc.stats(os.path.join(req["path"], req["newName"]))],
                     }
-            elif body["action"] == "details":
+            elif payload["action"] == "search":
+                files = svc.list_files(
+                    path=payload["path"],
+                    substr=payload.get("searchString"),
+                    show_hidden=bool(payload["showHiddenItems"]),
+                )
+                return {
+                    "cwd": svc.stats(path=payload["path"]),
+                    "files": [svc.stats(file) for file in files],
+                }
+            elif payload["action"] == "details":
                 stats = []
-                for data in body["data"]:
+                for data in payload["data"]:
                     file_stats = svc.stats(data["path"])
                     stats.append(file_stats)
 
@@ -107,24 +131,24 @@ class FileManagerActions(Resource):
                     response["isFile"] = False
                     response["multipleFiles"] = True
                 return {"details": response}
-            elif body["action"] == "copy":
+            elif payload["action"] == "copy":
                 files = []
-                for name in body["names"]:
-                    src = body["path"]
-                    dst = body["targetPath"]
+                for name in payload["names"]:
+                    src = payload["path"]
+                    dst = payload["targetPath"]
                     svc.copy_path(src=os.path.join(src, name), dst=dst)
                     stats = svc.stats(os.path.join(dst, name))
                     files.append(stats)
                 return {"files": files}
-            elif body["action"] == "move":
+            elif payload["action"] == "move":
                 files = []
                 conflicts = []
-                for name in body["names"]:
-                    src = body["path"]
-                    dst = body["targetPath"]
+                for name in payload["names"]:
+                    src = payload["path"]
+                    dst = payload["targetPath"]
                     if (
                         svc.exists_path(os.path.join(dst, name))
-                        and name not in body["renameFiles"]
+                        and name not in payload["renameFiles"]
                     ):
                         conflicts.append(name)
                     else:
