@@ -53,3 +53,13 @@ class MoveAction(BaseActionSchema):
     names = fields.List(fields.String())
     targetPath = fields.String()
     renameFiles = fields.List(fields.String())
+
+
+class UploadSchema(Schema):
+    action = fields.String(
+        validate=OneOf(("save", "remove")),
+        allow_none=False,
+        required=True,
+    )
+    path = fields.String()
+    cancel_uploading = fields.String(data_key="cancel-uploading")

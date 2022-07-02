@@ -1,4 +1,9 @@
 from marshmallow import fields, Schema
+from schemas.serlializers.http import HttpResponseSchema
+
+
+class ErrorSchema(HttpResponseSchema):
+    fileExists = fields.List(fields.String())
 
 
 class StatsSchema(Schema):
@@ -14,12 +19,6 @@ class StatsSchema(Schema):
     mode = fields.Integer()
 
 
-class ErrorSchema(Schema):
-    code = fields.Number()
-    message = fields.Number()
-    fileExists = fields.List(fields.String())
-
-
 class DetailsSchema(Schema):
     name = fields.String()
     location = fields.String()
@@ -33,3 +32,15 @@ class DetailsSchema(Schema):
 class ResponseSchema(Schema):
     cwd = fields.Nested(StatsSchema)
     files = fields.List(fields.Nested(StatsSchema))
+
+
+def dump_error(**kwargs):
+    return {"error": ErrorSchema().dump(**kwargs)}
+
+
+def dump_response(**kwargs):
+    return ResponseSchema.dump(**kwargs)
+
+
+def dump_details(**kwargs):
+    return {"details": DetailsSchema().dump(**kwargs)}

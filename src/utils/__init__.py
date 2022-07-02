@@ -1,7 +1,6 @@
 import os
 import pwd
 import subprocess
-import typing
 
 from flask_restful import abort
 from werkzeug.http import HTTP_STATUS_CODES

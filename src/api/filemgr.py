@@ -1,10 +1,9 @@
 import json
 import os
 
-from flask import Blueprint, jsonify, request, send_file
+from flask import Blueprint, request, send_file
 from flask_restful import Api, Resource
-from http.client import HTTPException
-from marshmallow import EXCLUDE
+from marshmallow import EXCLUDE, ValidationError
 from werkzeug.utils import secure_filename
 
 from src import utils
@@ -36,72 +35,51 @@ class FileManagerActions(Resource):
                                 - ErrorSchema
         """
         payload = request.json
-        base_schema = dsl.BaseActionSchema
-        dump_error = sl.ErrorSchema().dump
-        dump_response = sl.ResponseSchema().dump
-
-        errors = base_schema(only=("action",), unknown=EXCLUDE).validate(payload)
-        if errors:
-            return dump_error({"error": {"code": 400, "message": json.dumps(errors)}})
-
         svc = FileManagerSvc(username=None)
-
         try:
+            # throw error when invalid action
+            dsl.ReadActionSchema(only=("action",), unknown=EXCLUDE).load(payload)
             if payload["action"] == "read":
                 req = dsl.ReadActionSchema().load(payload)
                 files = svc.list_files(
                     path=req["path"],
                     show_hidden=req["showHiddenItems"],
                 )
-                return dump_response(
-                    {
-                        "cwd": svc.stats(path=payload["path"]),
-                        "files": [svc.stats(file) for file in files],
-                    }
+                return sl.dump_response(
+                    cwd=svc.stats(path=payload["path"]),
+                    files=[svc.stats(file) for file in files],
                 )
             elif payload["action"] == "create":
                 req = dsl.CreateActionSchema().load(payload)
                 svc.create_dir(path=req["path"], name=req["name"])
-                return dump_response(
-                    {
-                        "files": [svc.stats(os.path.join(req["path"], req["name"]))],
-                    }
+                return sl.dump_response(
+                    files=[svc.stats(os.path.join(req["path"], req["name"]))],
                 )
             elif payload["action"] == "delete":
                 req = dsl.DeleteActionSchema().load(payload)
                 for name in req["names"]:
                     path = os.path.join(req["path"], name)
                     svc.remove_path(path=path)
-                return dump_response(
-                    {
-                        "files": [
-                            {"path": os.path.join(payload["path"], name)}
-                            for name in payload["names"]
-                        ],
-                    }
+                return sl.dump_response(
+                    files=[
+                        {"path": os.path.join(payload["path"], name)}
+                        for name in payload["names"]
+                    ],
                 )
             elif payload["action"] == "rename":
                 req = dsl.RenameActionSchema().load(payload)
                 src = os.path.join(req["path"], req["name"])
                 dst = os.path.join(req["path"], req["newName"])
                 if svc.exists_path(dst):
-                    return dump_error(
-                        {
-                            "error": {
-                                "code": 400,
-                                "message": f"Cannot rename {req['name']} to "
-                                f"{req['newName']}: destination already exists.",
-                            }
-                        }
+                    return sl.dump_error(
+                        code=400,
+                        message=f"Cannot rename {req['name']} to "
+                        f"{req['newName']}: destination already exists.",
                     )
                 else:
                     svc.rename_path(src=src, dst=dst)
-                    return dump_response(
-                        {
-                            "files": [
-                                svc.stats(os.path.join(req["path"], req["newName"]))
-                            ],
-                        }
+                    return sl.dump_response(
+                        files=[svc.stats(os.path.join(req["path"], req["newName"]))]
                     )
             elif payload["action"] == "search":
                 req = dsl.SearchActionSchema().load(payload)
@@ -110,11 +88,9 @@ class FileManagerActions(Resource):
                     substr=req["searchString"],
                     show_hidden=req["showHiddenItems"],
                 )
-                return dump_response(
-                    {
-                        "cwd": svc.stats(path=req["path"]),
-                        "files": [svc.stats(file) for file in files],
-                    }
+                return sl.dump_response(
+                    cwd=svc.stats(path=req["path"]),
+                    files=[svc.stats(file) for file in files],
                 )
             elif payload["action"] == "details":
                 req = dsl.DetailsActionSchema().load(payload)
@@ -127,32 +103,24 @@ class FileManagerActions(Resource):
                     raise ValueError("Missing data")
                 elif len(stats) == 1:
                     stats = stats[0]
-                    return {
-                        "details": sl.DetailsSchema().dump(
-                            {
-                                "name": stats["name"],
-                                "size": utils.convert_bytes(stats["size"]),
-                                "location": stats["path"],
-                                "created": stats["dateCreated"],
-                                "modified": stats["dateModified"],
-                                "isFile": stats["isFile"],
-                                "multipleFiles": False,
-                            }
-                        )
-                    }
+                    return sl.dump_details(
+                        name=stats["name"],
+                        size=utils.convert_bytes(stats["size"]),
+                        location=stats["path"],
+                        created=stats["dateCreated"],
+                        modified=stats["dateModified"],
+                        isFile=stats["isFile"],
+                        multipleFiles=False,
+                    )
                 elif len(stats) > 1:
                     size = sum(s["size"] for s in stats)
-                    return {
-                        "details": sl.DetailsSchema().dump(
-                            {
-                                "location": f"All in {os.path.dirname(stats[0]['path'])}",
-                                "name": ", ".join(s["name"] for s in stats),
-                                "size": utils.convert_bytes(size),
-                                "isFile": False,
-                                "multipleFiles": True,
-                            }
-                        )
-                    }
+                    return sl.dump_details(
+                        location=f"All in {os.path.dirname(stats[0]['path'])}",
+                        name=", ".join(s["name"] for s in stats),
+                        size=utils.convert_bytes(size),
+                        isFile=False,
+                        multipleFiles=True,
+                    )
             elif payload["action"] == "copy":
                 req = dsl.SearchActionSchema().load(payload)
                 files = []
@@ -162,7 +130,7 @@ class FileManagerActions(Resource):
                     svc.copy_path(src=os.path.join(src, name), dst=dst)
                     stats = svc.stats(os.path.join(dst, name))
                     files.append(stats)
-                return dump_response({"files": files})
+                return sl.dump_response(files=files)
             elif payload["action"] == "move":
                 req = dsl.SearchActionSchema().load(payload)
                 files = []
@@ -180,23 +148,19 @@ class FileManagerActions(Resource):
                         stats = svc.stats(os.path.join(dst, name))
                         files.append(stats)
                 if conflicts:
-                    return dump_error(
-                        {
-                            "code": 400,
-                            "message": "File Already Exists",
-                            "fileExists": conflicts,
-                        }
+                    return sl.dump_error(
+                        code=400,
+                        message="File Already Exists",
+                        fileExists=conflicts,
                     )
-                return dump_response({"files": files})
-            else:
-                raise ValueError
+                return sl.dump_response(files=files)
 
         except PermissionError:
-            return dump_error({"error": {"code": 403, "message": "Permission Denied"}})
+            return sl.dump_error(code=403, message="Permission Denied")
         except FileNotFoundError:
-            return dump_error({"error": {"code": 404, "message": "File Not Found"}})
-        except OSError:
-            return dump_error({"error": {"code": 400, "message": "Bad request"}})
+            return sl.dump_error(code=404, message="File Not Found")
+        except (OSError, ValidationError):
+            return sl.dump_error(code=400, message="Bad request")
 
 
 @api.resource("/download", endpoint="fm_download")
@@ -253,22 +217,20 @@ class FileManagerUpload(Resource):
                                 - ErrorSchema
         """
         payload = request.form
-        dump_error = sl.ErrorSchema().dump
         svc = FileManagerSvc(username=None)
         try:
-            if payload["action"] == "save":
+            req = dsl.UploadSchema().load(payload)
+            if req["action"] == "save":
                 file = request.files["uploadFiles"]
                 filename = secure_filename(file.filename)
-                file.save(os.path.join(payload["path"], filename))
-            elif payload["action"] == "remove":
-                path = os.path.join(payload["path"], payload["cancel-uploading"])
+                file.save(os.path.join(req["path"], filename))
+            elif req["action"] == "remove":
+                path = os.path.join(req["path"], req["cancel-uploading"])
                 if svc.exists_path(path):
                     svc.remove_path(path)
-            else:
-                raise ValueError
             return utils.http_response(200), 200
-        except OSError:
-            return dump_error({"error": {"code": 400, "message": "Bad request"}})
+        except (OSError, ValidationError):
+            return sl.dump_error(code=400, message="Bad request")
 
 
 @api.resource("/images", endpoint="fm_images")
