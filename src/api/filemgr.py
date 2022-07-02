@@ -11,7 +11,7 @@ from src import utils
 from src.api.auth import current_username, requires_auth
 from src.schemas.deserializers import filemgr as dsl
 from src.schemas.serlializers import filemgr as sl
-from src.services.file_manager import FileManagerSvc
+from src.services.filemgr import FileManagerSvc
 
 blueprint = Blueprint("file_manager", __name__, url_prefix="/file-manager")
 api = Api(blueprint)
@@ -31,8 +31,9 @@ class FileManagerActions(Resource):
                     application/json:
                         schema:
                             oneOf:
-                                - FileMgrStatsSchema
-                                - FileMgrErrorSchema
+                                - ResponseSchema
+                                - DetailsSchema
+                                - ErrorSchema
         """
         payload = request.json
         base_schema = dsl.BaseActionSchema
@@ -41,7 +42,7 @@ class FileManagerActions(Resource):
 
         errors = base_schema(only=("action",), unknown=EXCLUDE).validate(payload)
         if errors:
-            return {"error": {"code": 400, "message": json.dumps(errors)}}
+            return dump_error({"error": {"code": 400, "message": json.dumps(errors)}})
 
         svc = FileManagerSvc(username=None)
 
@@ -191,7 +192,7 @@ class FileManagerActions(Resource):
                 raise ValueError
 
         except PermissionError:
-            return dump_error({"error": {"code": 401, "message": "Permission Denied"}})
+            return dump_error({"error": {"code": 403, "message": "Permission Denied"}})
         except FileNotFoundError:
             return dump_error({"error": {"code": 404, "message": "File Not Found"}})
         except OSError:
@@ -201,6 +202,19 @@ class FileManagerActions(Resource):
 @api.resource("/download", endpoint="fm_download")
 class FileManagerDownload(Resource):
     def post(self):
+        """
+        Download files. Multiple files are merged into a zipped file.
+        ---
+        tags:
+            - File Manager
+        responses:
+            200:
+                content:
+                    application/gzip:
+                        schema:
+                            type: string
+                            format: binary
+        """
         body = json.loads(request.form["downloadInput"])
         svc = FileManagerSvc(username=None)
         data = body["data"]
@@ -224,6 +238,20 @@ class FileManagerDownload(Resource):
 @api.resource("/upload", endpoint="fm_upload")
 class FileManagerUpload(Resource):
     def post(self):
+        """
+        Upload files.
+        ---
+        tags:
+            - File Manager
+        responses:
+            200:
+                content:
+                    application/json:
+                        schema:
+                            oneOf:
+                                - HttpResponseSchema
+                                - ErrorSchema
+        """
         payload = request.form
         dump_error = sl.ErrorSchema().dump
         svc = FileManagerSvc(username=None)
@@ -246,15 +274,40 @@ class FileManagerUpload(Resource):
 @api.resource("/images", endpoint="fm_images")
 class FileManagerImages(Resource):
     def get(self):
+        """
+        Get images.
+        ---
+        tags:
+            - File Manager
+        parameters:
+            - in: query
+              name: path
+              schema:
+                type: string
+              description: the filesystem path
+        responses:
+            200:
+                content:
+                    image/*:
+                        schema:
+                            type: string
+                            format: binary
+            400:
+                $ref: "#/components/responses/BadRequest"
+            403:
+                $ref: "#/components/responses/Forbidden"
+            404:
+                $ref: "#/components/responses/NotFound"
+        """
         path = os.path.join(os.path.sep, request.args.get("path", ""))
         svc = FileManagerSvc(username=None)
         try:
             if svc.exists_path(path):
-                return send_file(path, mimetype="image/jpg")
+                return send_file(path, mimetype="image/*")
             else:
                 raise FileNotFoundError
         except PermissionError:
-            return utils.abort_with(401)
+            return utils.abort_with(403)
         except FileNotFoundError:
             return utils.abort_with(404)
         except OSError:
