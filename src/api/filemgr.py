@@ -213,7 +213,7 @@ class FileManagerUpload(Resource):
                     application/json:
                         schema:
                             oneOf:
-                                - HttpResponseSchema
+                                - $ref: "#/components/schemas/HttpResponse"
                                 - ErrorResponseSchema
         """
         payload = request.form
