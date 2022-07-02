@@ -9,7 +9,7 @@ from werkzeug.utils import secure_filename
 from src import utils
 from src.api.auth import current_username, requires_auth
 from src.schemas.deserializers import filemgr as dsl
-from src.schemas.serlializers import filemgr as sl
+from src.schemas.serializers import filemgr as sl
 from src.services.filemgr import FileManagerSvc
 
 blueprint = Blueprint("file_manager", __name__, url_prefix="/file-manager")
@@ -23,16 +23,16 @@ class FileManagerActions(Resource):
         Use request body to specify intended action on given path.
         ---
         tags:
-            - File Manager
+            - file manager
         responses:
             200:
                 content:
                     application/json:
                         schema:
                             oneOf:
-                                - ResponseSchema
-                                - DetailsSchema
-                                - ErrorSchema
+                                - StatsResponseSchema
+                                - DetailsResponseSchema
+                                - ErrorResponseSchema
         """
         payload = request.json
         svc = FileManagerSvc(username=None)
@@ -45,14 +45,14 @@ class FileManagerActions(Resource):
                     path=req["path"],
                     show_hidden=req["showHiddenItems"],
                 )
-                return sl.dump_response(
+                return sl.dump_stats(
                     cwd=svc.stats(path=payload["path"]),
                     files=[svc.stats(file) for file in files],
                 )
             elif payload["action"] == "create":
                 req = dsl.CreateActionSchema().load(payload)
                 svc.create_dir(path=req["path"], name=req["name"])
-                return sl.dump_response(
+                return sl.dump_stats(
                     files=[svc.stats(os.path.join(req["path"], req["name"]))],
                 )
             elif payload["action"] == "delete":
@@ -60,7 +60,7 @@ class FileManagerActions(Resource):
                 for name in req["names"]:
                     path = os.path.join(req["path"], name)
                     svc.remove_path(path=path)
-                return sl.dump_response(
+                return sl.dump_stats(
                     files=[
                         {"path": os.path.join(payload["path"], name)}
                         for name in payload["names"]
@@ -78,7 +78,7 @@ class FileManagerActions(Resource):
                     )
                 else:
                     svc.rename_path(src=src, dst=dst)
-                    return sl.dump_response(
+                    return sl.dump_stats(
                         files=[svc.stats(os.path.join(req["path"], req["newName"]))]
                     )
             elif payload["action"] == "search":
@@ -88,7 +88,7 @@ class FileManagerActions(Resource):
                     substr=req["searchString"],
                     show_hidden=req["showHiddenItems"],
                 )
-                return sl.dump_response(
+                return sl.dump_stats(
                     cwd=svc.stats(path=req["path"]),
                     files=[svc.stats(file) for file in files],
                 )
@@ -130,7 +130,7 @@ class FileManagerActions(Resource):
                     svc.copy_path(src=os.path.join(src, name), dst=dst)
                     stats = svc.stats(os.path.join(dst, name))
                     files.append(stats)
-                return sl.dump_response(files=files)
+                return sl.dump_stats(files=files)
             elif payload["action"] == "move":
                 req = dsl.SearchActionSchema().load(payload)
                 files = []
@@ -153,7 +153,7 @@ class FileManagerActions(Resource):
                         message="File Already Exists",
                         fileExists=conflicts,
                     )
-                return sl.dump_response(files=files)
+                return sl.dump_stats(files=files)
 
         except PermissionError:
             return sl.dump_error(code=403, message="Permission Denied")
@@ -170,7 +170,7 @@ class FileManagerDownload(Resource):
         Download files. Multiple files are merged into a zipped file.
         ---
         tags:
-            - File Manager
+            - file manager
         responses:
             200:
                 content:
@@ -206,7 +206,7 @@ class FileManagerUpload(Resource):
         Upload files.
         ---
         tags:
-            - File Manager
+            - file manager
         responses:
             200:
                 content:
@@ -214,7 +214,7 @@ class FileManagerUpload(Resource):
                         schema:
                             oneOf:
                                 - HttpResponseSchema
-                                - ErrorSchema
+                                - ErrorResponseSchema
         """
         payload = request.form
         svc = FileManagerSvc(username=None)
@@ -240,7 +240,7 @@ class FileManagerImages(Resource):
         Get images.
         ---
         tags:
-            - File Manager
+            - file manager
         parameters:
             - in: query
               name: path

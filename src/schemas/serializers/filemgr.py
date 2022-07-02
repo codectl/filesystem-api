@@ -1,9 +1,5 @@
 from marshmallow import fields, Schema
-from schemas.serlializers.http import HttpResponseSchema
-
-
-class ErrorSchema(HttpResponseSchema):
-    fileExists = fields.List(fields.String())
+from schemas.serializers.http import HttpResponseSchema
 
 
 class StatsSchema(Schema):
@@ -29,18 +25,30 @@ class DetailsSchema(Schema):
     multipleFiles = fields.Boolean()
 
 
-class ResponseSchema(Schema):
+class StatsResponseSchema(Schema):
     cwd = fields.Nested(StatsSchema)
     files = fields.List(fields.Nested(StatsSchema))
 
 
+class ErrorSchema(HttpResponseSchema):
+    fileExists = fields.List(fields.String())
+
+
+class ErrorResponseSchema(Schema):
+    error = fields.Nested(ErrorSchema)
+
+
+class DetailsResponseSchema(Schema):
+    details = fields.Nested(DetailsSchema)
+
+
+def dump_stats(**kwargs):
+    return StatsResponseSchema.dump(**kwargs)
+
+
 def dump_error(**kwargs):
-    return {"error": ErrorSchema().dump(**kwargs)}
-
-
-def dump_response(**kwargs):
-    return ResponseSchema.dump(**kwargs)
+    return ErrorResponseSchema().dump({"error": kwargs})
 
 
 def dump_details(**kwargs):
-    return {"details": DetailsSchema().dump(**kwargs)}
+    return DetailsResponseSchema().dump({"details": kwargs})

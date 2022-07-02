@@ -1,7 +1,7 @@
 from marshmallow import EXCLUDE, fields, Schema
 from marshmallow.validate import OneOf
 
-from src.schemas.serlializers.filemgr import StatsSchema
+from src.schemas.serializers.filemgr import StatsSchema
 
 
 class BaseActionSchema(Schema):
