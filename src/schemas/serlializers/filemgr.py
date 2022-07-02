@@ -1,8 +1,9 @@
 from marshmallow import fields, Schema
 
 
-class FileMgrStatsSchema(Schema):
+class StatsSchema(Schema):
     name = fields.String()
+    path = fields.String()
     dateCreated = fields.String()
     dateModified = fields.String()
     filterPath = fields.String()
@@ -10,18 +11,19 @@ class FileMgrStatsSchema(Schema):
     isFile = fields.Boolean()
     size = fields.Number()
     type = fields.String()
+    mode = fields.Integer()
 
 
-class FileMgrErrorSchema(Schema):
+class ErrorSchema(Schema):
     code = fields.Number()
     message = fields.Number()
     fileExists = fields.List(fields.String())
 
 
-class FileMgrDetailsSchema(FileMgrStatsSchema):
+class DetailsSchema(StatsSchema):
     multipleFiles = fields.Boolean()
 
 
-class FileMgrResponseSchema(Schema):
-    cwd = fields.Nested(FileMgrStatsSchema())
-    files = fields.List(fields.Nested(FileMgrStatsSchema()))
+class ResponseSchema(Schema):
+    cwd = fields.Nested(StatsSchema)
+    files = fields.List(fields.Nested(StatsSchema))

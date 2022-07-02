@@ -1,54 +1,55 @@
-from marshmallow import fields, Schema
+from marshmallow import EXCLUDE, fields, Schema
 from marshmallow.validate import OneOf
 
-from src.schemas.serlializers.filemgr import FileMgrStatsSchema
+from src.schemas.serlializers.filemgr import StatsSchema
 
 
-class FileMgrBaseRequest(Schema):
+class BaseActionSchema(Schema):
     action = fields.String(
         validate=OneOf(
-            ["read", "create", "delete", "rename", "search", "details", "copy", "move"]
+            ("read", "create", "delete", "rename", "search", "details", "copy", "move")
         ),
         allow_none=False,
+        required=True,
     )
     path = fields.String()
-    data = fields.Nested(FileMgrStatsSchema())
+    data = fields.List(fields.Nested(StatsSchema(unknown=EXCLUDE)))
 
 
-class FileMgrReadAction(FileMgrBaseRequest):
+class ReadActionSchema(BaseActionSchema):
     showHiddenItems = fields.Boolean()
 
 
-class FileMgrCreateAction(FileMgrBaseRequest):
+class CreateActionSchema(BaseActionSchema):
     name = fields.String()
 
 
-class FileMgrRenameAction(FileMgrBaseRequest):
+class RenameActionSchema(BaseActionSchema):
     name = fields.String()
     newName = fields.String()
 
 
-class FileMgrDeleteAction(FileMgrBaseRequest):
+class DeleteActionSchema(BaseActionSchema):
     names = fields.List(fields.String())
 
 
-class FileMgrDetailsAction(FileMgrBaseRequest):
+class DetailsActionSchema(BaseActionSchema):
     names = fields.List(fields.String())
 
 
-class FileMgrSearchAction(FileMgrBaseRequest):
+class SearchActionSchema(BaseActionSchema):
     showHiddenItems = fields.Boolean()
     caseSensitive = fields.Boolean()
     searchString = fields.String()
 
 
-class FileMgrCopyAction(FileMgrBaseRequest):
+class CopyActionSchema(BaseActionSchema):
     names = fields.List(fields.String())
     targetPath = fields.String()
     renameFiles = fields.List(fields.String())
 
 
-class FileMgrMoveAction(FileMgrBaseRequest):
+class MoveAction(BaseActionSchema):
     names = fields.List(fields.String())
     targetPath = fields.String()
     renameFiles = fields.List(fields.String())
