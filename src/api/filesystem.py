@@ -1,10 +1,13 @@
-from flask import Blueprint, jsonify, request, send_file
+import os
+
+from flask import Blueprint, request, send_file
 from flask_restful import Api, Resource
 from http.client import HTTPException
 
 from src import utils
 from src.services.filesystem import FilesystemSvc
 from src.api.auth import current_username, requires_auth
+from werkzeug.utils import secure_filename
 
 blueprint = Blueprint("filesystem", __name__)
 api = Api(blueprint)
@@ -51,17 +54,22 @@ class Filesystem(Resource):
                 $ref: "#/components/responses/NotFound"
         """
         path = utils.normpath(path)
-        username = current_username
-        fs = FilesystemSvc(username=username)
+        svc = FilesystemSvc(username=current_username)
         try:
             accept = request.headers.get("accept", "application/json")
             if accept == "application/json":
-                return jsonify(fs.list_files(path=path))
+                return [file.name for file in svc.list_files(path=path)]
             elif accept == "application/octet-stream":
-                stats = fs.list_files(path=path, flags="-dlL")[0]
-                mode = utils.file_mode(stats=stats)
-                name, content = fs.attachment(path=path, mode=mode)
-                return send_file(content, as_attachment=True)
+                if os.path.isfile(path):
+                    return send_file(path, as_attachment=True)
+                else:
+                    tarfile = svc.create_attachment(paths=(path,))
+                    return send_file(
+                        tarfile,
+                        as_attachment=True,
+                        mimetype="application/gzip",
+                        download_name=f"{os.path.basename(path)}.tar.gz",
+                    )
             raise HTTPException("unsupported 'accept' HTTP header")
 
         except PermissionError as ex:
@@ -71,7 +79,7 @@ class Filesystem(Resource):
         except Exception as ex:
             utils.abort_with(code=400, message=str(ex))
 
-    @requires_auth(schemes=["basic"])
+    # @requires_auth(schemes=["basic"])
     def post(self, path):
         """
         Create files in given path.
@@ -117,13 +125,17 @@ class Filesystem(Resource):
         """
         path = utils.normpath(path)
         username = current_username
-        fs = FilesystemSvc(username=username)
+        svc = FilesystemSvc(username=username)
         files = request.files.to_dict(flat=False).get("files", [])
         if not files:
             utils.abort_with(code=400, message="missing files")
-
         try:
-            fs.upload_files(path=path, files=files)
+            if any(
+                svc.exists_path(os.path.join(path, file.filename)) for file in files
+            ):
+                utils.abort_with(code=400, message="file already exists")
+            for file in files:
+                svc.save_file(path, file=file)
             return utils.http_response(201), 201
         except PermissionError as ex:
             utils.abort_with(code=403, message=str(ex))
@@ -177,14 +189,12 @@ class Filesystem(Resource):
                 $ref: "#/components/responses/NotFound"
         """
         path = utils.normpath(path)
-        username = current_username
-        fs = FilesystemSvc(username=username)
+        svc = FilesystemSvc(username=current_username)
         files = request.files.to_dict(flat=False).get("files", [])
         if not files:
             utils.abort_with(code=400, message="missing files")
-
         try:
-            fs.upload_files(path=path, files=files, update=True)
+            svc.save_file(path, files=files)
             return utils.http_response(204), 204
         except PermissionError as ex:
             utils.abort_with(code=403, message=str(ex))
@@ -226,10 +236,9 @@ class Filesystem(Resource):
                 $ref: "#/components/responses/NotFound"
         """
         path = utils.normpath(path)
-        username = current_username
-        fs = FilesystemSvc(username=username)
+        svc = FilesystemSvc(username=current_username)
         try:
-            fs.delete_file(path=path)
+            svc.remove_path(path=path)
             return utils.http_response(204), 204
         except PermissionError as ex:
             utils.abort_with(code=403, message=str(ex))
