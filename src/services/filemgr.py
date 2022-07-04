@@ -1,49 +1,30 @@
 from datetime import datetime
-import io
 import os
 import pathlib
 import re
-import shutil
-import tarfile
 
-from src import utils
+from services.filesystem import FilesystemSvc
 
 __all__ = ("FileManagerSvc",)
 
 
-class user_ctx:
-    def __init__(self, username):
-        self.username = username
-        self.uid = os.getuid()
-        self.gid = os.getuid()
-
-    def __enter__(self):
-        os.setuid(utils.user_uid(self.username))
-        os.setgid(utils.user_gid(self.username))
-
-    def __exit__(self, exc_type, exc_value, exc_traceback):
-        os.setuid(self.uid)
-        os.setgid(self.gid)
-
-
-class FileManagerSvc:
-    def __init__(self, username=None):
-        self.username = str(username) if username else None
+class FileManagerSvc(FilesystemSvc):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
     def list_files(self, path, show_hidden=False, substr=None):
+        """Override"""
         regex = rf".*{(substr or '').strip('*')}.*"
-        if not show_hidden:
-            regex = "".join((r"^(?!\.)", regex))
-
-        return [
-            os.path.join(path, file.name)
-            for file in iter(os.scandir(path=path))
-            if re.match(regex, file.name)
-        ]
+        files = super().list_files(path, show_hidden=show_hidden)
+        return [filename for filename in files if re.match(regex, filename)]
 
     def stats(self, path):
+        """Override"""
+        return self.stats_mapper(path, stats=super().stats(path))
+
+    @staticmethod
+    def stats_mapper(path: str, stats: os.stat_result) -> dict:
         path = os.path.join(os.path.sep, path.strip(os.path.sep))
-        stats = os.stat(path, follow_symlinks=False)
         isdir = os.path.isdir(path)
         return {
             "name": os.path.basename(path),
@@ -51,57 +32,9 @@ class FileManagerSvc:
             "filterPath": os.path.join(os.path.dirname(path), ""),
             "size": stats.st_size,
             "isFile": not isdir,
-            "dateModified": datetime.fromtimestamp(stats.st_mtime).isoformat(),
-            "dateCreated": datetime.fromtimestamp(stats.st_ctime).isoformat(),
+            "dateModified": datetime.fromtimestamp(stats.st_mtime),
+            "dateCreated": datetime.fromtimestamp(stats.st_ctime),
             "type": pathlib.Path(path).suffix,
             "hasChild": bool(next(os.walk(path), ((), ()))[1]) if isdir else False,
             "mode": stats.st_mode,
         }
-
-    def create_dir(self, path, name):
-        os.mkdir(os.path.join(path, name))
-
-    def exists_path(self, path):
-        return os.path.exists(path)
-
-    def remove_path(self, path):
-        if os.path.isfile(path) or os.path.islink(path):
-            os.remove(path)
-        elif os.path.isdir(path):
-            shutil.rmtree(path)
-
-    def move_path(self, src, dst):
-        dst = self.rename_duplicates(dst=dst, filename=os.path.basename(src))
-        shutil.move(src, dst)
-
-    def rename_path(self, src, dst):
-        os.rename(src, dst)
-
-    def copy_path(self, src, dst):
-        dst = self.rename_duplicates(dst=dst, filename=os.path.basename(src))
-        if os.path.isdir(src):
-            shutil.copytree(src, dst)
-        else:
-            shutil.copy2(src, dst)
-
-    @classmethod
-    def rename_duplicates(cls, dst, filename, count=0):
-        if count > 0:
-            base, extension = os.path.splitext(filename)
-            candidate = f"{base}({count}){extension}"
-        else:
-            candidate = filename
-        path = os.path.join(dst, candidate)
-        if os.path.exists(path):
-            return cls.rename_duplicates(dst, filename, count + 1)
-        else:
-            return path
-
-    def create_attachment(self, paths=()):
-        obj = io.BytesIO()
-        with tarfile.open(fileobj=obj, mode="w|gz") as tar:
-            for path in paths:
-                arcname = os.path.basename(path)  # keep path relative
-                tar.add(path, arcname=arcname)
-        obj.seek(0)
-        return obj
