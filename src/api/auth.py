@@ -8,7 +8,7 @@ from src.services.auth import AuthSvc
 
 
 # proxy to get username from g
-current_username = LocalProxy(lambda: g.username)
+current_username = LocalProxy(lambda: getattr(g, "username", None))
 
 
 def requires_auth(schemes=("basic",)):

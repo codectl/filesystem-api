@@ -12,7 +12,7 @@ api = Api(blueprint)
 
 @api.resource("/<path:path>", endpoint="fs")
 class Filesystem(Resource):
-    @requires_auth(schemes=["basic"])
+    # @requires_auth(schemes=["basic"])
     def get(self, path):
         """
         List files in given path.
