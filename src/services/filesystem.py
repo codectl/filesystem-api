@@ -4,6 +4,9 @@ import os
 import re
 import shutil
 
+from werkzeug.utils import secure_filename
+from werkzeug.datastructures import FileStorage
+
 from src import utils
 
 __all__ = ("FilesystemSvc",)
@@ -14,14 +17,12 @@ class FilesystemSvc:
         self.username = str(username) if username else None
 
     @utils.impersonate
-    def list_files(self, path, show_hidden=False):
+    def list_files(self, path, show_hidden=False) -> list[os.DirEntry]:
         regex = r".*"
         if not show_hidden:
             regex = "".join((r"^(?!\.)", regex))
         return [
-            os.path.join(path, file.name)
-            for file in iter(os.scandir(path=path))
-            if re.match(regex, file.name)
+            file for file in iter(os.scandir(path=path)) if re.match(regex, file.name)
         ]
 
     @utils.impersonate
@@ -82,3 +83,8 @@ class FilesystemSvc:
                 tar.add(path, arcname=arcname)
         obj.seek(0)
         return obj
+
+    @utils.impersonate
+    def save_file(self, dst, file: FileStorage):
+        filename = secure_filename(file.filename)
+        file.save(os.path.join(dst, filename))
