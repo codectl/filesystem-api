@@ -26,7 +26,7 @@ class FilesystemSvc:
         ]
 
     @utils.impersonate
-    def stats(self, path):
+    def stats(self, path) -> os.stat_result:
         return os.stat(os.path.normpath(path), follow_symlinks=False)
 
     @utils.impersonate
@@ -88,3 +88,7 @@ class FilesystemSvc:
                 tar.add(path, arcname=arcname)
         obj.seek(0)
         return obj
+
+    @utils.impersonate
+    def isfile(self, path):
+        return os.path.isfile(path)

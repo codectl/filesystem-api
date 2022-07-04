@@ -7,7 +7,6 @@ from http.client import HTTPException
 from src import utils
 from src.services.filesystem import FilesystemSvc
 from src.api.auth import current_username, requires_auth
-from werkzeug.utils import secure_filename
 
 blueprint = Blueprint("filesystem", __name__)
 api = Api(blueprint)
@@ -60,7 +59,7 @@ class Filesystem(Resource):
             if accept == "application/json":
                 return [file.name for file in svc.list_files(path=path)]
             elif accept == "application/octet-stream":
-                if os.path.isfile(path):
+                if svc.isfile(path):  # check for regular file
                     return send_file(path, as_attachment=True)
                 else:
                     tarfile = svc.create_attachment(paths=(path,))

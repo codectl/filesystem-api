@@ -184,7 +184,7 @@ class FileManagerDownload(Resource):
         if len(data) == 1:
             obj = data[0]
             path = obj["path"]
-            if os.path.isfile(path):
+            if svc.isfile(path):
                 return send_file(path, as_attachment=True)
 
         paths = (d["path"] for d in data)
