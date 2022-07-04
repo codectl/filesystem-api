@@ -1,6 +1,6 @@
 import os
 import pwd
-import subprocess
+import functools
 
 from flask_restful import abort
 from werkzeug.http import HTTP_STATUS_CODES
@@ -18,25 +18,7 @@ def convert_bytes(num, suffix="B"):
 
 
 def normpath(path):
-    return os.path.normpath(f"/{path.strip('/')}")
-
-
-def shell(cmd, universal_newlines=True, **kwargs):
-    popen = subprocess.Popen(
-        cmd.split(),
-        stdin=kwargs.pop("stdin", subprocess.PIPE),
-        stdout=kwargs.pop("stdout", subprocess.PIPE),
-        stderr=kwargs.pop("stderr", subprocess.PIPE),
-        universal_newlines=universal_newlines,
-        **kwargs,
-    )
-
-    stdout, stderr = popen.communicate()
-    if popen.returncode > 0:
-        raise subprocess.CalledProcessError(
-            returncode=popen.returncode, cmd=cmd, stderr=stderr
-        )
-    return stdout
+    return os.path.join(os.path.sep, os.path.normpath(path))
 
 
 def http_response(code: int, message="", serialize=True, **kwargs):
@@ -58,3 +40,36 @@ def user_uid(username):
 
 def user_gid(username):
     return pwd.getpwnam(username).pw_gid
+
+
+def impersonate(func):
+    """Decorator to run a routing under user privileges."""
+    class user_ctx:
+        def __init__(self, username):
+            self.username = username
+            self.uid = os.getuid()
+            self.gid = os.getuid()
+            self.ctx_uid = self.uid
+            self.ctx_gid = self.gid
+
+        def __enter__(self):
+            try:
+                self.ctx_uid = user_uid(self.username)
+                self.ctx_gid = user_gid(self.username)
+                os.setuid(self.ctx_uid)
+                os.setgid(self.ctx_gid)
+            except (KeyError, TypeError):
+                pass  # suppress missing username
+            except PermissionError:
+                pass  # suppress missing privileges
+
+        def __exit__(self, exc_type, exc_value, exc_traceback):
+            if self.uid != self.ctx_uid or self.gid != self.ctx_gid:
+                os.setuid(self.uid)
+                os.setgid(self.gid)
+
+    @functools.wraps(func)
+    def wrapper(self, *args, **kwargs):
+        with user_ctx(self.username):
+            return func(self, *args, **kwargs)
+    return wrapper
