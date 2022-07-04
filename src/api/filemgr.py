@@ -46,8 +46,8 @@ class FileManagerActions(Resource):
                     show_hidden=req["showHiddenItems"],
                 )
                 return sl.dump_stats(
-                    cwd=svc.stats(path=payload["path"]),
-                    files=[svc.stats(file) for file in files],
+                    cwd=svc.stats(path=req["path"]),
+                    files=[svc.stats(file.path) for file in files],
                 )
             elif payload["action"] == "create":
                 req = dsl.CreateActionSchema().load(payload)
@@ -90,7 +90,7 @@ class FileManagerActions(Resource):
                 )
                 return sl.dump_stats(
                     cwd=svc.stats(path=req["path"]),
-                    files=[svc.stats(file) for file in files],
+                    files=[svc.stats(file.path) for file in files],
                 )
             elif payload["action"] == "details":
                 req = dsl.DetailsActionSchema().load(payload)
@@ -222,8 +222,7 @@ class FileManagerUpload(Resource):
             req = dsl.UploadSchema().load(payload)
             if req["action"] == "save":
                 file = request.files["uploadFiles"]
-                filename = secure_filename(file.filename)
-                file.save(os.path.join(req["path"], filename))
+                svc.save_file(req["path"], file=file)
             elif req["action"] == "remove":
                 path = os.path.join(req["path"], req["cancel-uploading"])
                 if svc.exists_path(path):
