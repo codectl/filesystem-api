@@ -44,6 +44,7 @@ def user_gid(username):
 
 def impersonate(func):
     """Decorator to run a routing under user privileges."""
+
     class user_ctx:
         def __init__(self, username):
             self.username = username
@@ -72,4 +73,5 @@ def impersonate(func):
     def wrapper(self, *args, **kwargs):
         with user_ctx(self.username):
             return func(self, *args, **kwargs)
+
     return wrapper

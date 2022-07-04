@@ -264,10 +264,9 @@ class FileManagerImages(Resource):
         path = os.path.join(os.path.sep, request.args.get("path", ""))
         svc = FileManagerSvc(username=None)
         try:
-            if svc.exists_path(path):
-                return send_file(path, mimetype="image/*")
-            else:
+            if not svc.exists_path(path):
                 raise FileNotFoundError
+            return send_file(path, mimetype="image/*")
         except PermissionError:
             return utils.abort_with(403)
         except FileNotFoundError:
