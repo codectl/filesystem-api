@@ -45,14 +45,16 @@ class SearchActionSchema(BaseActionSchema):
 
 class CopyActionSchema(BaseActionSchema):
     names = fields.List(fields.String())
-    targetPath = fields.String()
     renameFiles = fields.List(fields.String())
+    targetPath = fields.String()
+    targetData = fields.Nested(StatsSchema(unknown=EXCLUDE))
 
 
-class MoveAction(BaseActionSchema):
+class MoveActionSchema(BaseActionSchema):
     names = fields.List(fields.String())
-    targetPath = fields.String()
     renameFiles = fields.List(fields.String())
+    targetPath = fields.String()
+    targetData = fields.Nested(StatsSchema(unknown=EXCLUDE))
 
 
 class UploadSchema(Schema):

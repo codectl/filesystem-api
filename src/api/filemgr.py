@@ -122,7 +122,7 @@ class FileManagerActions(Resource):
                         multipleFiles=True,
                     )
             elif payload["action"] == "copy":
-                req = dsl.SearchActionSchema().load(payload)
+                req = dsl.CopyActionSchema().load(payload)
                 files = []
                 for name in req["names"]:
                     src = req["path"]
@@ -132,7 +132,7 @@ class FileManagerActions(Resource):
                     files.append(stats)
                 return sl.dump_stats(files=files)
             elif payload["action"] == "move":
-                req = dsl.SearchActionSchema().load(payload)
+                req = dsl.MoveActionSchema().load(payload)
                 files = []
                 conflicts = []
                 for name in req["names"]:
@@ -160,6 +160,7 @@ class FileManagerActions(Resource):
         except FileNotFoundError:
             return sl.dump_error(code=404, message="File Not Found")
         except (OSError, ValidationError):
+            raise
             return sl.dump_error(code=400, message="Bad request")
 
 
