@@ -30,6 +30,11 @@ class FilesystemSvc:
         return os.stat(os.path.normpath(path), follow_symlinks=False)
 
     @utils.impersonate
+    def save_file(self, dst, file: FileStorage):
+        filename = secure_filename(file.filename)
+        file.save(os.path.join(dst, filename))
+
+    @utils.impersonate
     def make_dir(self, path, name):
         os.mkdir(os.path.join(path, name))
 
@@ -83,8 +88,3 @@ class FilesystemSvc:
                 tar.add(path, arcname=arcname)
         obj.seek(0)
         return obj
-
-    @utils.impersonate
-    def save_file(self, dst, file: FileStorage):
-        filename = secure_filename(file.filename)
-        file.save(os.path.join(dst, filename))
