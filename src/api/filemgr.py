@@ -51,7 +51,7 @@ class FileManagerActions(Resource):
                 )
             elif payload["action"] == "create":
                 req = dsl.CreateActionSchema().load(payload)
-                svc.create_dir(path=req["path"], name=req["name"])
+                svc.make_dir(path=req["path"], name=req["name"])
                 return sl.dump_stats(
                     files=[svc.stats(os.path.join(req["path"], req["name"]))],
                 )

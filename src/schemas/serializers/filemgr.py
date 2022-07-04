@@ -43,7 +43,7 @@ class DetailsResponseSchema(Schema):
 
 
 def dump_stats(**kwargs):
-    return StatsResponseSchema.dump(**kwargs)
+    return StatsResponseSchema().dump(kwargs)
 
 
 def dump_error(**kwargs):
