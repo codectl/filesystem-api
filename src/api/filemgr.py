@@ -160,7 +160,6 @@ class FileManagerActions(Resource):
         except FileNotFoundError:
             return sl.dump_error(code=404, message="File Not Found")
         except (OSError, ValidationError):
-            raise
             return sl.dump_error(code=400, message="Bad request")
 
 
@@ -181,8 +180,8 @@ class FileManagerDownload(Resource):
                             format: binary
         """
         body = json.loads(request.form["downloadInput"])
-        svc = FileManagerSvc(username=None)
         data = body["data"]
+        svc = FileManagerSvc(username=None)
         if len(data) == 1:
             obj = data[0]
             path = obj["path"]
