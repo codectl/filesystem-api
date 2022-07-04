@@ -8,6 +8,7 @@ from werkzeug.exceptions import HTTPException
 
 from src import __meta__, __version__, utils
 from src.api.filemgr import blueprint as fm
+from src.api.filesystem import blueprint as fs
 from src.settings import oas
 from src.settings.env import config_class, load_dotenv
 
@@ -37,6 +38,7 @@ def setup_app(app):
 
     # initial blueprint wiring
     index = Blueprint("index", __name__)
+    index.register_blueprint(fs)
     index.register_blueprint(fm)
     app.register_blueprint(index, url_prefix=url_prefix)
 
