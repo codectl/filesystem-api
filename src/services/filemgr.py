@@ -16,7 +16,7 @@ class FileManagerSvc(FilesystemSvc):
         """Override"""
         regex = rf".*{(substr or '').strip('*')}.*"
         files = super().list_files(path, show_hidden=show_hidden)
-        return [filename for filename in files if re.match(regex, filename)]
+        return [file for file in files if re.match(regex, file.name)]
 
     def stats(self, path):
         """Override"""
