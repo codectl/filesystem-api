@@ -4,10 +4,9 @@ import os
 from flask import Blueprint, request, send_file
 from flask_restful import Api, Resource
 from marshmallow import EXCLUDE, ValidationError
-from werkzeug.utils import secure_filename
 
 from src import utils
-from src.api.auth import current_username, requires_auth
+from src.api.auth import current_username
 from src.schemas.deserializers import filemgr as dsl
 from src.schemas.serializers import filemgr as sl
 from src.services.filemgr import FileManagerSvc
@@ -35,7 +34,7 @@ class FileManagerActions(Resource):
                                 - ErrorResponseSchema
         """
         payload = request.json
-        svc = FileManagerSvc(username=None)
+        svc = FileManagerSvc(username=current_username)
         try:
             # throw error when invalid action
             dsl.ReadActionSchema(only=("action",), unknown=EXCLUDE).load(payload)
@@ -181,7 +180,7 @@ class FileManagerDownload(Resource):
         """
         body = json.loads(request.form["downloadInput"])
         data = body["data"]
-        svc = FileManagerSvc(username=None)
+        svc = FileManagerSvc(username=current_username)
         if len(data) == 1:
             obj = data[0]
             path = obj["path"]
@@ -217,7 +216,7 @@ class FileManagerUpload(Resource):
                                 - ErrorResponseSchema
         """
         payload = request.form
-        svc = FileManagerSvc(username=None)
+        svc = FileManagerSvc(username=current_username)
         try:
             req = dsl.UploadSchema().load(payload)
             if req["action"] == "save":
@@ -261,7 +260,7 @@ class FileManagerImages(Resource):
                 $ref: "#/components/responses/NotFound"
         """
         path = os.path.join(os.path.sep, request.args.get("path", ""))
-        svc = FileManagerSvc(username=None)
+        svc = FileManagerSvc(username=current_username)
         try:
             if not svc.exists_path(path):
                 raise FileNotFoundError
