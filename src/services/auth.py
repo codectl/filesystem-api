@@ -43,7 +43,7 @@ def impersonate(username=None):
 
         @functools.wraps(func)
         def decorated(*args, **kwargs):
-            self = next(args, None)
+            self = next(iter(args), None)
             name = (
                 getattr(self, "username", None)
                 if not username and inspect.isclass(self)
