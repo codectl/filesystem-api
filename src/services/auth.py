@@ -50,7 +50,7 @@ def impersonate(username=None):
                 else username
             )
             with user_ctx(name):
-                return func(self, *args, **kwargs)
+                return func(*args, **kwargs)
 
         return decorated
 
