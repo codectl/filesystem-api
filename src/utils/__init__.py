@@ -18,7 +18,7 @@ def convert_bytes(num, suffix="B"):
 
 
 def normpath(path):
-    return os.path.join(os.path.sep, os.path.normpath(path))
+    return os.path.join(os.path.sep, path.strip(os.path.sep))
 
 
 def http_response(code: int, message="", serialize=True, **kwargs):
