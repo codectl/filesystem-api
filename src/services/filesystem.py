@@ -7,7 +7,7 @@ import shutil
 from werkzeug.utils import secure_filename
 from werkzeug.datastructures import FileStorage
 
-from src import utils
+from src.services.auth import impersonate
 
 __all__ = ("FilesystemSvc",)
 
@@ -16,7 +16,7 @@ class FilesystemSvc:
     def __init__(self, username=None):
         self.username = str(username) if username else None
 
-    @utils.impersonate
+    @impersonate
     def list_files(self, path, show_hidden=False) -> list[os.DirEntry]:
         regex = r".*"
         if not show_hidden:
@@ -25,24 +25,24 @@ class FilesystemSvc:
             file for file in iter(os.scandir(path=path)) if re.match(regex, file.name)
         ]
 
-    @utils.impersonate
+    @impersonate
     def stats(self, path) -> os.stat_result:
         return os.stat(os.path.normpath(path), follow_symlinks=False)
 
-    @utils.impersonate
+    @impersonate
     def save_file(self, dst, file: FileStorage):
         filename = secure_filename(file.filename)
         file.save(os.path.join(dst, filename))
 
-    @utils.impersonate
+    @impersonate
     def make_dir(self, path, name):
         os.mkdir(os.path.join(path, name))
 
-    @utils.impersonate
+    @impersonate
     def exists_path(self, path):
         return os.path.exists(path)
 
-    @utils.impersonate
+    @impersonate
     def remove_path(self, path):
         if not self.exists_path(path):
             raise FileNotFoundError
@@ -51,16 +51,16 @@ class FilesystemSvc:
         elif os.path.isdir(path):
             shutil.rmtree(path)
 
-    @utils.impersonate
+    @impersonate
     def move_path(self, src, dst):
         dst = self.rename_duplicates(dst=dst, filename=os.path.basename(src))
         shutil.move(src, dst)
 
-    @utils.impersonate
+    @impersonate
     def rename_path(self, src, dst):
         os.rename(src, dst)
 
-    @utils.impersonate
+    @impersonate
     def copy_path(self, src, dst):
         dst = self.rename_duplicates(dst=dst, filename=os.path.basename(src))
         if os.path.isdir(src):
@@ -68,7 +68,7 @@ class FilesystemSvc:
         else:
             shutil.copy2(src, dst)
 
-    @utils.impersonate
+    @impersonate
     def rename_duplicates(self, dst, filename, count=0):
         if count > 0:
             base, extension = os.path.splitext(filename)
@@ -81,7 +81,7 @@ class FilesystemSvc:
         else:
             return path
 
-    @utils.impersonate
+    @impersonate
     def create_attachment(self, paths=()):
         obj = io.BytesIO()
         with tarfile.open(fileobj=obj, mode="w|gz") as tar:
@@ -91,6 +91,6 @@ class FilesystemSvc:
         obj.seek(0)
         return obj
 
-    @utils.impersonate
+    @impersonate
     def isfile(self, path):
         return os.path.isfile(path)
