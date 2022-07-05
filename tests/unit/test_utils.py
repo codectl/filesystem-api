@@ -1,5 +1,7 @@
 from dataclasses import asdict
 
+import pytest
+import werkzeug.exceptions
 
 from src.utils import (
     convert_bytes,
@@ -46,4 +48,31 @@ def test_response():
         "code": 400,
         "reason": "Bad Request",
         "message": "error",
+    }
+
+
+def test_abort_with():
+    with pytest.raises(werkzeug.exceptions.BadRequest) as ex:
+        assert abort_with(code=400, message="custom message")
+    assert ex.value.code == 400
+    assert ex.value.data == {
+        "code": 400,
+        "reason": "Bad Request",
+        "message": "custom message",
+    }
+    with pytest.raises(werkzeug.exceptions.Unauthorized) as ex:
+        assert abort_with(code=401, message="custom message")
+    assert ex.value.code == 401
+    assert ex.value.data == {
+        "code": 401,
+        "reason": "Unauthorized",
+        "message": "custom message",
+    }
+    with pytest.raises(werkzeug.exceptions.Forbidden) as ex:
+        assert abort_with(code=403, message="custom message")
+    assert ex.value.code == 403
+    assert ex.value.data == {
+        "code": 403,
+        "reason": "Forbidden",
+        "message": "custom message",
     }
