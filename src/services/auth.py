@@ -18,8 +18,8 @@ def impersonate(username=None):
 
     def wrapper(func):
         class user_ctx:
-            def __init__(self, user_name):
-                self.username = user_name
+            def __init__(self, usrname):
+                self.username = usrname
                 self.uid = os.getuid()
                 self.gid = os.getuid()
                 self.ctx_uid = self.uid
