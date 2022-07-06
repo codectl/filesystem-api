@@ -44,12 +44,10 @@ class FilesystemSvc:
 
     @impersonate()
     def remove_path(self, path):
-        if not self.exists_path(path):
-            raise FileNotFoundError
-        elif os.path.isfile(path) or os.path.islink(path):
-            os.remove(path)
-        elif os.path.isdir(path):
+        if os.path.isdir(path):
             shutil.rmtree(path)
+        else:
+            os.remove(path)
 
     @impersonate()
     def move_path(self, src, dst):
