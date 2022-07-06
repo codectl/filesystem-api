@@ -88,7 +88,7 @@ class FileManagerActions(Resource):
                     return sl.dump_error(
                         code=400,
                         message=f"Cannot rename {req['name']} to "
-                                f"{req['newName']}: destination already exists.",
+                        f"{req['newName']}: destination already exists.",
                     )
                 else:
                     svc.rename_path(src=src, dst=dst)
@@ -153,8 +153,8 @@ class FileManagerActions(Resource):
                     src = req["path"]
                     dst = req["targetPath"]
                     if (
-                            svc.exists_path(os.path.join(dst, name))
-                            and name not in req["renameFiles"]
+                        svc.exists_path(os.path.join(dst, name))
+                        and name not in req["renameFiles"]
                     ):
                         conflicts.append(name)
                     else:
