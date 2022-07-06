@@ -14,7 +14,8 @@ api = Api(blueprint)
 
 @api.resource("/<path:path>", endpoint="fs")
 class Filesystem(Resource):
-    # @requires_auth(schemes=["basic"])
+
+    @requires_auth(schemes=["basic"])
     def get(self, path):
         """
         List files in given path.
@@ -75,10 +76,10 @@ class Filesystem(Resource):
             utils.abort_with(code=403, message=str(ex))
         except FileNotFoundError as ex:
             utils.abort_with(code=404, message=str(ex))
-        except Exception as ex:
+        except HTTPException as ex:
             utils.abort_with(code=400, message=str(ex))
 
-    # @requires_auth(schemes=["basic"])
+    @requires_auth(schemes=["basic"])
     def post(self, path):
         """
         Create files in given path.
@@ -119,8 +120,6 @@ class Filesystem(Resource):
                 $ref: "#/components/responses/Unauthorized"
             403:
                 $ref: "#/components/responses/Forbidden"
-            404:
-                $ref: "#/components/responses/NotFound"
         """
         path = utils.normpath(path)
         username = current_username
@@ -132,15 +131,13 @@ class Filesystem(Resource):
             if any(
                 svc.exists_path(os.path.join(path, file.filename)) for file in files
             ):
-                utils.abort_with(code=400, message="file already exists")
+                raise FileExistsError("a file already exists in given path")
             for file in files:
                 svc.save_file(path, file=file)
             return utils.http_response(201), 201
         except PermissionError as ex:
             utils.abort_with(code=403, message=str(ex))
-        except FileNotFoundError as ex:
-            utils.abort_with(code=404, message=str(ex))
-        except Exception as ex:
+        except (FileNotFoundError, FileExistsError) as ex:
             utils.abort_with(code=400, message=str(ex))
 
     @requires_auth(schemes=["basic"])
@@ -184,22 +181,24 @@ class Filesystem(Resource):
                 $ref: "#/components/responses/Unauthorized"
             403:
                 $ref: "#/components/responses/Forbidden"
-            404:
-                $ref: "#/components/responses/NotFound"
         """
         path = utils.normpath(path)
         svc = FilesystemSvc(username=current_username)
         files = request.files.to_dict(flat=False).get("files", [])
+
         if not files:
             utils.abort_with(code=400, message="missing files")
         try:
-            svc.save_file(path, files=files)
+            if not all(
+                svc.exists_path(os.path.join(path, file.filename)) for file in files
+            ):
+                raise FileNotFoundError("a file does not exist in given path")
+            for file in files:
+                svc.save_file(path, file=file)
             return utils.http_response(204), 204
         except PermissionError as ex:
             utils.abort_with(code=403, message=str(ex))
         except FileNotFoundError as ex:
-            utils.abort_with(code=404, message=str(ex))
-        except Exception as ex:
             utils.abort_with(code=400, message=str(ex))
 
     @requires_auth(schemes=["basic"])
@@ -231,8 +230,6 @@ class Filesystem(Resource):
                 $ref: "#/components/responses/Unauthorized"
             403:
                 $ref: "#/components/responses/Forbidden"
-            404:
-                $ref: "#/components/responses/NotFound"
         """
         path = utils.normpath(path)
         svc = FilesystemSvc(username=current_username)
@@ -242,6 +239,4 @@ class Filesystem(Resource):
         except PermissionError as ex:
             utils.abort_with(code=403, message=str(ex))
         except FileNotFoundError as ex:
-            utils.abort_with(code=404, message=str(ex))
-        except Exception as ex:
             utils.abort_with(code=400, message=str(ex))
