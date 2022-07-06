@@ -24,23 +24,23 @@ class CreateActionSchema(BaseActionSchema):
     name = fields.String()
 
 
-class RenameActionSchema(BaseActionSchema):
-    name = fields.String()
-    newName = fields.String()
-
-
 class DeleteActionSchema(BaseActionSchema):
     names = fields.List(fields.String())
 
 
-class DetailsActionSchema(BaseActionSchema):
-    names = fields.List(fields.String())
+class RenameActionSchema(BaseActionSchema):
+    name = fields.String()
+    newName = fields.String()
 
 
 class SearchActionSchema(BaseActionSchema):
     showHiddenItems = fields.Boolean()
     caseSensitive = fields.Boolean()
     searchString = fields.String()
+
+
+class DetailsActionSchema(BaseActionSchema):
+    names = fields.List(fields.String())
 
 
 class CopyActionSchema(BaseActionSchema):
