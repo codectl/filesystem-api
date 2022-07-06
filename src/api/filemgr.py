@@ -109,8 +109,9 @@ class FileManagerActions(Resource):
             elif payload["action"] == "details":
                 req = dsl.DetailsActionSchema().load(payload)
                 stats = []
-                for data in req["data"]:
-                    file_stats = svc.stats(data["path"])
+                for name in req["names"]:
+                    path = os.path.join(req["path"], name)
+                    file_stats = svc.stats(path=path)
                     stats.append(file_stats)
 
                 if not stats:
