@@ -13,9 +13,9 @@ def auth(mocker):
 
 
 class TestFilesystemGET:
-    # def test_unauthorized_request_throws_401(self, client):
-    #     response = client.get("/tmp", headers={})
-    #     assert response.status_code == 401
+    def test_unauthorized_request_throws_401(self, client):
+        response = client.get("/tmp", headers={})
+        assert response.status_code == 401
 
     def test_valid_path_returns_200(self, client, auth, fs):
         fs.create_file("/tmp/file.txt")
