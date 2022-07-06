@@ -1,5 +1,4 @@
 import io
-import subprocess
 from base64 import b64encode
 
 import pytest
