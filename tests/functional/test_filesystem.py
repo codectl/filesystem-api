@@ -83,7 +83,8 @@ class TestFilesystemPOST:
         )
         assert response.status_code == 201
         assert fs.exists("/tmp/file.txt") is True
-        assert open("/tmp/file.txt").read() == "text"
+        with open("/tmp/file.txt") as fd:
+            assert fd.read() == "text"
 
     def test_missing_path_returns_400(self, client, auth, fs):
         fs.create_dir("/tmp")
@@ -154,7 +155,8 @@ class TestFilesystemPUT:
             content_type="multipart/form-data",
         )
         assert response.status_code == 204
-        assert open("/tmp/file.txt").read() == "text"
+        with open("/tmp/file.txt") as fd:
+            assert fd.read() == "text"
 
     def test_missing_file_path_returns_400(self, client, auth, fs):
         fs.create_dir("/tmp")
