@@ -199,6 +199,12 @@ class FileManagerDownload(Resource):
                         schema:
                             type: string
                             format: binary
+            400:
+                $ref: "#/components/responses/BadRequest"
+            401:
+                $ref: "#/components/responses/Unauthorized"
+            403:
+                $ref: "#/components/responses/Forbidden"
         """
         payload = request.form
         svc = FileManagerSvc(username=current_username)
@@ -221,11 +227,11 @@ class FileManagerDownload(Resource):
                 download_name=filename,
             )
         except PermissionError:
-            return sl.dump_error(code=403, message="Permission Denied")
+            utils.abort_with(403)
         except FileNotFoundError:
-            return sl.dump_error(code=404, message="File Not Found")
-        except (OSError, ValidationError):
-            return sl.dump_error(code=400, message="Bad request")
+            utils.abort_with(404)
+        except OSError:
+            utils.abort_with(400)
 
 
 @api.resource("/upload", endpoint="fm_upload")
@@ -250,6 +256,12 @@ class FileManagerUpload(Resource):
                             oneOf:
                                 - $ref: "#/components/schemas/HttpResponse"
                                 - ErrorResponseSchema
+            400:
+                $ref: "#/components/responses/BadRequest"
+            401:
+                $ref: "#/components/responses/Unauthorized"
+            403:
+                $ref: "#/components/responses/Forbidden"
         """
         payload = request.form
         svc = FileManagerSvc(username=current_username)
@@ -263,8 +275,12 @@ class FileManagerUpload(Resource):
                 if svc.exists_path(path):
                     svc.remove_path(path)
             return utils.http_response(200), 200
-        except (OSError, ValidationError):
-            return sl.dump_error(code=400, message="Bad request")
+        except PermissionError:
+            utils.abort_with(403)
+        except FileNotFoundError:
+            utils.abort_with(404)
+        except OSError:
+            utils.abort_with(400)
 
 
 @api.resource("/images", endpoint="fm_images")
@@ -302,8 +318,8 @@ class FileManagerImages(Resource):
                 raise FileNotFoundError
             return send_file(path, mimetype="image/*")
         except PermissionError:
-            return utils.abort_with(403)
+            utils.abort_with(403)
         except FileNotFoundError:
-            return utils.abort_with(404)
+            utils.abort_with(404)
         except OSError:
-            return utils.abort_with(400)
+            utils.abort_with(400)
