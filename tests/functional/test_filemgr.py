@@ -1,3 +1,6 @@
+import json
+
+
 class TestFileManagerActions:
     def test_read_action(self, client, fs):
         fs.create_file("/tmp/file1.txt")
@@ -275,3 +278,50 @@ class TestFileManagerActions:
         assert response.status_code == 200
         assert data["error"]["code"] == 403
         assert data["error"]["message"] == "Permission Denied"
+
+
+class TestFileManagerDownload:
+    def test_single_file_download_action(self, client, fs):
+        fs.create_file("/tmp/file.txt")
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        response = client.post(
+            "/file-manager/download",
+            headers=headers,
+            data={
+                "downloadInput": json.dumps(
+                    {
+                        "action": "download",
+                        "path": "/tmp",
+                        "names": ["file.txt"],
+                        "data": [],
+                    }
+                )
+            },
+        )
+        headers = response.headers
+        assert response.status_code == 200
+        assert headers["Content-Disposition"] == f"attachment; filename=file.txt"
+        assert headers["Content-Type"] == "text/plain; charset=utf-8"
+
+    def test_multiple_files_download_action(self, client, fs):
+        fs.create_file("/tmp/file1.txt")
+        fs.create_file("/tmp/file2.txt")
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        response = client.post(
+            "/file-manager/download",
+            headers=headers,
+            data={
+                "downloadInput": json.dumps(
+                    {
+                        "action": "download",
+                        "path": "/tmp",
+                        "names": ["file1.txt", "file2.txt"],
+                        "data": [],
+                    }
+                )
+            },
+        )
+        headers = response.headers
+        assert response.status_code == 200
+        assert headers["Content-Disposition"] == "attachment; filename=files.tar.gz"
+        assert headers["Content-Type"] == "application/gzip"
