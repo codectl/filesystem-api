@@ -1,4 +1,6 @@
-from marshmallow import EXCLUDE, fields, Schema
+import json
+
+from marshmallow import EXCLUDE, fields, pre_load, Schema
 from marshmallow.validate import OneOf
 
 from src.schemas.serializers.filemgr import StatsSchema
@@ -57,13 +59,6 @@ class MoveActionSchema(BaseActionSchema):
     targetData = fields.Nested(StatsSchema(unknown=EXCLUDE), allow_none=True)
 
 
-class DownloadSchema(Schema):
-    class DownloadInputSchema(BaseActionSchema):
-        names = fields.List(fields.String())
-
-    downloadInput = fields.Nested(DownloadInputSchema())
-
-
 class UploadSchema(Schema):
     action = fields.String(
         validate=OneOf(("save", "remove")),
@@ -72,3 +67,23 @@ class UploadSchema(Schema):
     )
     path = fields.String()
     cancel_uploading = fields.String(data_key="cancel-uploading")
+
+
+class DownloadSchema(Schema):
+    class DownloadInputSchema(BaseActionSchema):
+        action = fields.String(
+            validate=OneOf(("download",)),
+            allow_none=False,
+            required=True,
+        )
+        path = fields.String()
+        data = fields.List(fields.Nested(StatsSchema(unknown=EXCLUDE)))
+        names = fields.List(fields.String())
+
+    downloadInput = fields.Nested(DownloadInputSchema())
+
+    @pre_load
+    def parser(self, data, **_):
+        parsed = data.to_dict()
+        parsed["downloadInput"] = json.loads(parsed["downloadInput"])
+        return parsed
