@@ -243,3 +243,35 @@ class TestFileManagerActions:
         assert fs.exists("/tmp/src/file.txt") is False
         assert fs.exists("/tmp/dst/file.txt") is True
         assert fs.exists("/tmp/dst/file (1).txt") is True
+
+    def test_missing_path_sends_error(self, client, fs):
+        fs.create_dir("/tmp")
+        response = client.post(
+            "/file-manager/actions",
+            json={
+                "action": "read",
+                "path": "/tmp/file.txt",
+                "showHiddenItems": True,
+                "data": [],
+            },
+        )
+        data = response.json
+        assert response.status_code == 200
+        assert data["error"]["code"] == 404
+        assert data["error"]["message"] == "File Not Found"
+
+    def test_permission_denied_sends_error(self, client, fs):
+        fs.create_file("/tmp/root.txt", st_mode=0o000)
+        response = client.post(
+            "/file-manager/actions",
+            json={
+                "action": "read",
+                "path": "/tmp/root.txt",
+                "showHiddenItems": True,
+                "data": [],
+            },
+        )
+        data = response.json
+        assert response.status_code == 200
+        assert data["error"]["code"] == 403
+        assert data["error"]["message"] == "Permission Denied"
