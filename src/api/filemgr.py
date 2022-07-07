@@ -142,8 +142,8 @@ class FileManagerActions(Resource):
                 for name in req["names"]:
                     src = req["path"]
                     dst = req["targetPath"]
-                    svc.copy_path(src=os.path.join(src, name), dst=dst)
-                    stats = svc.stats(os.path.join(dst, name))
+                    path = svc.copy_path(src=os.path.join(src, name), dst=dst)
+                    stats = svc.stats(path)
                     files.append(stats)
                 return sl.dump_stats(files=files)
             elif payload["action"] == "move":
@@ -159,14 +159,15 @@ class FileManagerActions(Resource):
                     ):
                         conflicts.append(name)
                     else:
-                        svc.move_path(src=os.path.join(src, name), dst=dst)
-                        stats = svc.stats(os.path.join(dst, name))
+                        path = svc.move_path(src=os.path.join(src, name), dst=dst)
+                        stats = svc.stats(path)
                         files.append(stats)
                 if conflicts:
                     return sl.dump_error(
                         code=400,
                         message="File Already Exists",
                         fileExists=conflicts,
+                        files=files
                     )
                 return sl.dump_stats(files=files)
 
