@@ -1,4 +1,3 @@
-import json
 import os
 
 from flask import Blueprint, request, send_file
@@ -191,8 +190,8 @@ class FileManagerDownload(Resource):
             description: action properties
             required: true
             content:
-                multipart/form-data:
-                    schema: UploadSchema
+                application/x-www-form-urlencoded:
+                    schema: DownloadSchema
         responses:
             200:
                 content:
@@ -201,18 +200,18 @@ class FileManagerDownload(Resource):
                             type: string
                             format: binary
         """
-        body = json.loads(request.form["downloadInput"])
-        data = body["data"]
+        payload = request.form
         svc = FileManagerSvc(username=current_username)
-        if len(data) == 1:
-            obj = data[0]
-            path = obj["path"]
+        req = dsl.DownloadSchema().load(payload)
+        names = req["downloadInput"]["names"]
+        paths = [os.path.join(req["path"], name) for name in names]
+        if len(paths) == 1:
+            path = paths[0]
             if svc.isfile(path):
                 return send_file(path, as_attachment=True)
 
-        paths = (d["path"] for d in data)
         tarfile = svc.create_attachment(paths=paths)
-        filename = f"{'files' if len(data) > 1 else data[0]['name']}.tar.gz"
+        filename = f"{'files' if len(names) > 1 else names[0]}.tar.gz"
         return send_file(
             tarfile,
             as_attachment=True,
@@ -229,6 +228,12 @@ class FileManagerUpload(Resource):
         ---
         tags:
             - file manager
+        requestBody:
+            description: action properties
+            required: true
+            content:
+                multipart/form-data:
+                    schema: UploadSchema
         responses:
             200:
                 content:
