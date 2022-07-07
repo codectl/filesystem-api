@@ -340,10 +340,8 @@ class TestFileManagerDownload:
                 )
             },
         )
-        data = response.json
-        assert response.status_code == 200
-        assert data["error"]["code"] == 404
-        assert data["error"]["message"] == "File Not Found"
+        assert response.status_code == 404
+        assert response.json == {"code": 404, "reason": "Not Found", "message": ""}
 
 
 class TestFileManagerUpload:
@@ -352,14 +350,29 @@ class TestFileManagerUpload:
         response = client.post(
             "/file-manager/upload",
             data={
-                "action": "upload",
+                "action": "save",
                 "path": "/tmp",
-                "cancel_uploading": False
+                "cancel-uploading": False,
+                "uploadFiles": (io.BytesIO(b"text"), "file.txt")
             },
-            files={"uploadFiles": (io.BytesIO(b"text"), "file.txt")},
             content_type="multipart/form-data",
         )
-        headers = response.headers
         assert response.status_code == 200
-        assert headers["Content-Disposition"] == f"attachment; filename=file.txt"
-        assert headers["Content-Type"] == "text/plain; charset=utf-8"
+        assert fs.exists("/tmp/file.txt") is True
+        with open("/tmp/file.txt") as fd:
+            assert fd.read() == "text"
+
+    def test_missing_path_sends_error(self, client, fs):
+        fs.create_dir("/tmp")
+        response = client.post(
+            "/file-manager/upload",
+            data={
+                "action": "save",
+                "path": "/tmp/dir",
+                "cancel-uploading": False,
+                "uploadFiles": (None, "file.txt")
+            },
+            content_type="multipart/form-data",
+        )
+        assert response.status_code == 404
+        assert response.json == {"code": 404, "reason": "Not Found", "message": ""}
