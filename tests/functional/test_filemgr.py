@@ -325,7 +325,7 @@ class TestFileManagerDownload:
         assert headers["Content-Disposition"] == "attachment; filename=files.tar.gz"
         assert headers["Content-Type"] == "application/gzip"
 
-    def test_missing_path_sends_error(self, client, fs):
+    def test_missing_path_raises_404(self, client, fs):
         fs.create_dir("/tmp")
         response = client.post(
             "/file-manager/download",
@@ -362,7 +362,7 @@ class TestFileManagerUpload:
         with open("/tmp/file.txt") as fd:
             assert fd.read() == "text"
 
-    def test_missing_path_sends_error(self, client, fs):
+    def test_missing_path_raises_404(self, client, fs):
         fs.create_dir("/tmp")
         response = client.post(
             "/file-manager/upload",
