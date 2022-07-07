@@ -202,22 +202,25 @@ class FileManagerDownload(Resource):
         """
         payload = request.form
         svc = FileManagerSvc(username=current_username)
-        req = dsl.DownloadSchema().load(payload)
-        names = req["downloadInput"]["names"]
-        paths = [os.path.join(req["path"], name) for name in names]
-        if len(paths) == 1:
-            path = paths[0]
-            if svc.isfile(path):
-                return send_file(path, as_attachment=True)
+        try:
+            req = dsl.DownloadSchema().load(payload)
+            names = req["downloadInput"]["names"]
+            paths = [os.path.join(req["path"], name) for name in names]
+            if len(paths) == 1:
+                path = paths[0]
+                if svc.isfile(path):
+                    return send_file(path, as_attachment=True)
 
-        tarfile = svc.create_attachment(paths=paths)
-        filename = f"{'files' if len(names) > 1 else names[0]}.tar.gz"
-        return send_file(
-            tarfile,
-            as_attachment=True,
-            mimetype="application/gzip",
-            download_name=filename,
-        )
+            tarfile = svc.create_attachment(paths=paths)
+            filename = f"{'files' if len(names) > 1 else names[0]}.tar.gz"
+            return send_file(
+                tarfile,
+                as_attachment=True,
+                mimetype="application/gzip",
+                download_name=filename,
+            )
+        except (OSError, ValidationError):
+            return sl.dump_error(code=400, message="Bad request")
 
 
 @api.resource("/upload", endpoint="fm_upload")
