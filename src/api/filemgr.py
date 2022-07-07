@@ -203,6 +203,7 @@ class FileManagerDownload(Resource):
         payload = request.form
         svc = FileManagerSvc(username=current_username)
         try:
+            print(request.headers)
             req = dsl.DownloadSchema().load(payload)
             names = req["downloadInput"]["names"]
             paths = [os.path.join(req["downloadInput"]["path"], name) for name in names]
@@ -219,6 +220,10 @@ class FileManagerDownload(Resource):
                 mimetype="application/gzip",
                 download_name=filename,
             )
+        except PermissionError:
+            return sl.dump_error(code=403, message="Permission Denied")
+        except FileNotFoundError:
+            return sl.dump_error(code=404, message="File Not Found")
         except (OSError, ValidationError):
             return sl.dump_error(code=400, message="Bad request")
 
