@@ -53,6 +53,7 @@ class FilesystemSvc:
     def move_path(self, src, dst):
         dst = self.rename_duplicates(dst=dst, filename=os.path.basename(src))
         shutil.move(src, dst)
+        return dst
 
     @impersonate()
     def rename_path(self, src, dst):
@@ -65,6 +66,7 @@ class FilesystemSvc:
             shutil.copytree(src, dst)
         else:
             shutil.copy2(src, dst)
+        return dst
 
     @impersonate()
     def rename_duplicates(self, dst, filename, count=0):
