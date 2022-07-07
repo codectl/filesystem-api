@@ -315,7 +315,7 @@ class FileManagerImages(Resource):
         try:
             if not svc.exists_path(path):
                 raise FileNotFoundError
-            return send_file(path, mimetype="image/*")
+            return send_file(path)
         except PermissionError:
             utils.abort_with(403)
         except FileNotFoundError:
