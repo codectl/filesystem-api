@@ -177,3 +177,81 @@ class TestFileManagerActions:
         assert data["details"]["isFile"] is False
         assert data["details"]["multipleFiles"] is True
         assert data["details"]["size"] == "0 B"
+
+    def test_copy_action(self, client, fs):
+        fs.create_file("/tmp/src/file1.txt")
+        fs.create_file("/tmp/src/file2.txt")
+        fs.create_file("/tmp/dst/file2.txt")
+        response = client.post(
+            "/file-manager/actions",
+            json={
+                "action": "copy",
+                "path": "/tmp/src",
+                "names": ["file1.txt", "file2.txt"],
+                "renameFiles": [],
+                "targetPath": "/tmp/dst",
+                "targetData": None,
+                "data": []
+            }
+        )
+        data = response.json
+        assert response.status_code == 200
+        assert len(data["files"]) == 2
+        assert any(file["name"] == "file1.txt" for file in data["files"]) is True
+        assert any(file["name"] == "file2 (1).txt" for file in data["files"]) is True
+        assert fs.exists("/tmp/src/file1.txt") is True
+        assert fs.exists("/tmp/dst/file2.txt") is True
+        assert fs.exists("/tmp/dst/file2 (1).txt") is True
+
+    def test_move_action(self, client, fs):
+        fs.create_file("/tmp/src/file1.txt")
+        fs.create_file("/tmp/src/file2.txt")
+        fs.create_file("/tmp/dst/file2.txt")
+        response = client.post(
+            "/file-manager/actions",
+            json={
+                "action": "move",
+                "path": "/tmp/src",
+                "names": ["file1.txt", "file2.txt"],
+                "renameFiles": [],
+                "targetPath": "/tmp/dst",
+                "targetData": None,
+                "data": []
+            }
+        )
+        data = response.json
+        assert response.status_code == 200
+        assert len(data["files"]) == 1
+        assert data["files"][0]["name"] == "file1.txt"
+        assert data["files"][0]["path"] == "/tmp/dst/file1.txt"
+        assert data["error"]["code"] == 400
+        assert data["error"]["message"] == "File Already Exists"
+        assert data["error"]["fileExists"] == ["file2.txt"]
+        assert fs.exists("/tmp/src/file1.txt") is False
+        assert fs.exists("/tmp/src/file2.txt") is True
+        assert fs.exists("/tmp/dst/file1.txt") is True
+
+    def test_override_move_action(self, client, fs):
+        fs.create_file("/tmp/src/file.txt")
+        fs.create_file("/tmp/dst/file.txt")
+        response = client.post(
+            "/file-manager/actions",
+            json={
+                "action": "move",
+                "path": "/tmp/src",
+                "names": ["file.txt"],
+                "renameFiles": ["file.txt"],
+                "targetPath": "/tmp/dst",
+                "targetData": None,
+                "data": []
+            }
+        )
+        data = response.json
+        assert response.status_code == 200
+        assert len(data["files"]) == 1
+        assert data["files"][0]["name"] == "file (1).txt"
+        assert data["files"][0]["path"] == "/tmp/dst/file (1).txt"
+        assert fs.exists("/tmp/src/file.txt") is False
+        assert fs.exists("/tmp/dst/file.txt") is True
+        assert fs.exists("/tmp/dst/file (1).txt") is True
+
