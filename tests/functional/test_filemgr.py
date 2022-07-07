@@ -353,7 +353,7 @@ class TestFileManagerUpload:
                 "action": "save",
                 "path": "/tmp",
                 "cancel-uploading": False,
-                "uploadFiles": (io.BytesIO(b"text"), "file.txt")
+                "uploadFiles": (io.BytesIO(b"text"), "file.txt"),
             },
             content_type="multipart/form-data",
         )
@@ -370,9 +370,31 @@ class TestFileManagerUpload:
                 "action": "save",
                 "path": "/tmp/dir",
                 "cancel-uploading": False,
-                "uploadFiles": (None, "file.txt")
+                "uploadFiles": (None, "file.txt"),
             },
             content_type="multipart/form-data",
+        )
+        assert response.status_code == 404
+        assert response.json == {"code": 404, "reason": "Not Found", "message": ""}
+
+
+class TestFileManagerImages:
+    def test_get_image(self, client, fs):
+        fs.create_file("/tmp/img.jpeg")
+        response = client.get(
+            "/file-manager/images",
+            query_string={"path": "/tmp/img.jpeg"},
+        )
+        headers = response.headers
+        assert response.status_code == 200
+        assert headers["Content-Disposition"] == "inline; filename=img.jpeg"
+        assert headers["Content-Type"] == "image/jpeg"
+
+    def test_missing_path_raises_404(self, client, fs):
+        fs.create_dir("/tmp")
+        response = client.get(
+            "/file-manager/images",
+            query_string={"path": "/tmp/img.jpeg"},
         )
         assert response.status_code == 404
         assert response.json == {"code": 404, "reason": "Not Found", "message": ""}
