@@ -205,7 +205,7 @@ class FileManagerDownload(Resource):
         try:
             req = dsl.DownloadSchema().load(payload)
             names = req["downloadInput"]["names"]
-            paths = [os.path.join(req["path"], name) for name in names]
+            paths = [os.path.join(req["downloadInput"]["path"], name) for name in names]
             if len(paths) == 1:
                 path = paths[0]
                 if svc.isfile(path):
