@@ -320,5 +320,3 @@ class FileManagerImages(Resource):
             utils.abort_with(403)
         except FileNotFoundError:
             utils.abort_with(404)
-        except OSError:
-            utils.abort_with(400)
