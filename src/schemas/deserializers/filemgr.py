@@ -57,6 +57,13 @@ class MoveActionSchema(BaseActionSchema):
     targetData = fields.Nested(StatsSchema(unknown=EXCLUDE), allow_none=True)
 
 
+class DownloadSchema(Schema):
+    class DownloadInputSchema(BaseActionSchema):
+        names = fields.List(fields.String())
+
+    downloadInput = fields.Nested(DownloadInputSchema())
+
+
 class UploadSchema(Schema):
     action = fields.String(
         validate=OneOf(("save", "remove")),

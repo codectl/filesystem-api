@@ -26,24 +26,23 @@ class DetailsSchema(Schema):
 
 
 class BaseResponseSchema(Schema):
-    cwd = fields.Nested(StatsSchema)
-    files = fields.List(fields.Nested(StatsSchema))
+    cwd = fields.Nested(StatsSchema())
+    files = fields.List(fields.Nested(StatsSchema()))
 
 
 class StatsResponseSchema(BaseResponseSchema):
     pass
 
 
-class ErrorSchema(HttpResponseSchema):
-    fileExists = fields.List(fields.String())
-
-
 class ErrorResponseSchema(BaseResponseSchema):
-    error = fields.Nested(ErrorSchema)
+    class ErrorSchema(HttpResponseSchema):
+        fileExists = fields.List(fields.String())
+
+    error = fields.Nested(ErrorSchema())
 
 
 class DetailsResponseSchema(BaseResponseSchema):
-    details = fields.Nested(DetailsSchema)
+    details = fields.Nested(DetailsSchema())
 
 
 def dump_stats(**kwargs):
