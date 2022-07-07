@@ -25,20 +25,24 @@ class DetailsSchema(Schema):
     multipleFiles = fields.Boolean()
 
 
-class StatsResponseSchema(Schema):
+class BaseResponseSchema(Schema):
     cwd = fields.Nested(StatsSchema)
     files = fields.List(fields.Nested(StatsSchema))
+
+
+class StatsResponseSchema(BaseResponseSchema):
+    pass
 
 
 class ErrorSchema(HttpResponseSchema):
     fileExists = fields.List(fields.String())
 
 
-class ErrorResponseSchema(Schema):
+class ErrorResponseSchema(BaseResponseSchema):
     error = fields.Nested(ErrorSchema)
 
 
-class DetailsResponseSchema(Schema):
+class DetailsResponseSchema(BaseResponseSchema):
     details = fields.Nested(DetailsSchema)
 
 
@@ -47,8 +51,8 @@ def dump_stats(**kwargs):
 
 
 def dump_error(**kwargs):
-    return ErrorResponseSchema().dump({"error": kwargs})
+    return ErrorResponseSchema().dump({**{"error": kwargs}, **kwargs})
 
 
 def dump_details(**kwargs):
-    return DetailsResponseSchema().dump({"details": kwargs})
+    return DetailsResponseSchema().dump({**{"details": kwargs}, **kwargs})
