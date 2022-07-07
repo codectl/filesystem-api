@@ -1,5 +1,4 @@
 class TestFileManagerActions:
-
     def test_read_action(self, client, fs):
         fs.create_file("/tmp/file1.txt")
         fs.create_file("/tmp/.file2.txt")
@@ -9,8 +8,8 @@ class TestFileManagerActions:
                 "action": "read",
                 "path": "/tmp",
                 "showHiddenItems": True,
-                "data": []
-            }
+                "data": [],
+            },
         )
         data = response.json
         assert response.status_code == 200
@@ -22,12 +21,7 @@ class TestFileManagerActions:
         fs.create_dir("/tmp")
         response = client.post(
             "/file-manager/actions",
-            json={
-                "action": "create",
-                "path": "/tmp",
-                "name": "dir",
-                "data": []
-            }
+            json={"action": "create", "path": "/tmp", "name": "dir", "data": []},
         )
         data = response.json
         assert response.status_code == 200
@@ -48,8 +42,8 @@ class TestFileManagerActions:
                 "action": "delete",
                 "path": "/tmp",
                 "names": ["file1.txt", "file2.txt"],
-                "data": []
-            }
+                "data": [],
+            },
         )
         data = response.json
         assert response.status_code == 200
@@ -69,8 +63,8 @@ class TestFileManagerActions:
                 "path": "/tmp",
                 "name": "file1.txt",
                 "newName": "file2.txt",
-                "data": []
-            }
+                "data": [],
+            },
         )
         data = response.json
         assert response.status_code == 200
@@ -91,8 +85,8 @@ class TestFileManagerActions:
                 "path": "/tmp",
                 "name": "file1.txt",
                 "newName": "file2.txt",
-                "data": []
-            }
+                "data": [],
+            },
         )
         data = response.json
         assert response.status_code == 200
@@ -111,8 +105,8 @@ class TestFileManagerActions:
                 "showHiddenItems": True,
                 "caseSensitive": True,
                 "searchString": "file",
-                "data": []
-            }
+                "data": [],
+            },
         )
         data = response.json
         assert response.status_code == 200
@@ -128,8 +122,8 @@ class TestFileManagerActions:
                 "action": "details",
                 "path": "/tmp",
                 "names": ["file.txt"],
-                "data": []
-            }
+                "data": [],
+            },
         )
         data = response.json
         assert response.status_code == 200
@@ -143,12 +137,7 @@ class TestFileManagerActions:
         fs.create_dir("/tmp/dir")
         response = client.post(
             "/file-manager/actions",
-            json={
-                "action": "details",
-                "path": "/tmp",
-                "names": ["dir"],
-                "data": []
-            }
+            json={"action": "details", "path": "/tmp", "names": ["dir"], "data": []},
         )
         data = response.json
         assert response.status_code == 200
@@ -167,8 +156,8 @@ class TestFileManagerActions:
                 "action": "details",
                 "path": "/tmp",
                 "names": ["dir", "file.txt"],
-                "data": []
-            }
+                "data": [],
+            },
         )
         data = response.json
         assert response.status_code == 200
@@ -191,8 +180,8 @@ class TestFileManagerActions:
                 "renameFiles": [],
                 "targetPath": "/tmp/dst",
                 "targetData": None,
-                "data": []
-            }
+                "data": [],
+            },
         )
         data = response.json
         assert response.status_code == 200
@@ -216,8 +205,8 @@ class TestFileManagerActions:
                 "renameFiles": [],
                 "targetPath": "/tmp/dst",
                 "targetData": None,
-                "data": []
-            }
+                "data": [],
+            },
         )
         data = response.json
         assert response.status_code == 200
@@ -243,8 +232,8 @@ class TestFileManagerActions:
                 "renameFiles": ["file.txt"],
                 "targetPath": "/tmp/dst",
                 "targetData": None,
-                "data": []
-            }
+                "data": [],
+            },
         )
         data = response.json
         assert response.status_code == 200
@@ -254,4 +243,3 @@ class TestFileManagerActions:
         assert fs.exists("/tmp/src/file.txt") is False
         assert fs.exists("/tmp/dst/file.txt") is True
         assert fs.exists("/tmp/dst/file (1).txt") is True
-

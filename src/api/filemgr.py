@@ -167,7 +167,7 @@ class FileManagerActions(Resource):
                         code=400,
                         message="File Already Exists",
                         fileExists=conflicts,
-                        files=files
+                        files=files,
                     )
                 return sl.dump_stats(files=files)
 
