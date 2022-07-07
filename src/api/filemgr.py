@@ -209,7 +209,6 @@ class FileManagerDownload(Resource):
         payload = request.form
         svc = FileManagerSvc(username=current_username)
         try:
-            print(request.headers)
             req = dsl.DownloadSchema().load(payload)
             names = req["downloadInput"]["names"]
             paths = [os.path.join(req["downloadInput"]["path"], name) for name in names]
