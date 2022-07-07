@@ -283,10 +283,8 @@ class TestFileManagerActions:
 class TestFileManagerDownload:
     def test_single_file_download_action(self, client, fs):
         fs.create_file("/tmp/file.txt")
-        headers = {"Content-Type": "application/x-www-form-urlencoded"}
         response = client.post(
             "/file-manager/download",
-            headers=headers,
             data={
                 "downloadInput": json.dumps(
                     {
@@ -325,3 +323,23 @@ class TestFileManagerDownload:
         assert response.status_code == 200
         assert headers["Content-Disposition"] == "attachment; filename=files.tar.gz"
         assert headers["Content-Type"] == "application/gzip"
+
+    def test_missing_path_sends_error(self, client, fs):
+        fs.create_dir("/tmp")
+        response = client.post(
+            "/file-manager/download",
+            data={
+                "downloadInput": json.dumps(
+                    {
+                        "action": "download",
+                        "path": "/tmp",
+                        "names": ["file.txt"],
+                        "data": [],
+                    }
+                )
+            },
+        )
+        data = response.json
+        assert response.status_code == 200
+        assert data["error"]["code"] == 404
+        assert data["error"]["message"] == "File Not Found"
