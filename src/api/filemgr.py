@@ -191,7 +191,7 @@ class FileManagerDownload(Resource):
             description: action properties
             required: true
             content:
-                application/json:
+                multipart/form-data:
                     schema: UploadSchema
         responses:
             200:
