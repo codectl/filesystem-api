@@ -1,3 +1,4 @@
+import io
 import json
 
 
@@ -343,3 +344,22 @@ class TestFileManagerDownload:
         assert response.status_code == 200
         assert data["error"]["code"] == 404
         assert data["error"]["message"] == "File Not Found"
+
+
+class TestFileManagerUpload:
+    def test_file_upload_action(self, client, fs):
+        fs.create_dir("/tmp")
+        response = client.post(
+            "/file-manager/upload",
+            data={
+                "action": "upload",
+                "path": "/tmp",
+                "cancel_uploading": False
+            },
+            files={"uploadFiles": (io.BytesIO(b"text"), "file.txt")},
+            content_type="multipart/form-data",
+        )
+        headers = response.headers
+        assert response.status_code == 200
+        assert headers["Content-Disposition"] == f"attachment; filename=file.txt"
+        assert headers["Content-Type"] == "text/plain; charset=utf-8"
