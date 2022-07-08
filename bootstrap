@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+set -e
+
+# authentication service
+sudo nslcd
