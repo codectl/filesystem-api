@@ -1,0 +1,55 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: filesystem-api
+  labels:
+    app: filesystem-api
+    framework: flask
+  annotations:
+    a8r.io/description: "CRUD operations in the current filesystem"
+    a8r.io/owner: renatodamas
+
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: filesystem-api
+
+  strategy:
+    # Update each pod at a time and prevent
+    # additional pods from created
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 50%
+      maxSurge: 0
+
+  template:
+    metadata:
+      labels:
+        app: filesystem-api
+    spec:
+      containers:
+        - name: filesystem-api
+          image: filesystem-api:latest
+          imagePullPolicy: Always
+          envFrom:
+            - secretRef:
+                name: proxy
+            - configMapRef:
+                name: filesystem-api
+          resources:
+            requests:
+              cpu: 500m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            capabilities:
+              add: [ ]
+      serviceAccountName: filesystem-api
+      restartPolicy: Always
