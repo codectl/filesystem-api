@@ -17,6 +17,11 @@ filesystem-api
 
 A RESTful API service that provides CRUD operations in the current filesystem over HTTP.
 
+The API is also a Python implementation of a `File Manager Provider <https://ej2
+.syncfusion.com/react/documentation/file-manager/file-system-provider/>`_ by
+`Syncfusion <https://www.syncfusion.com/>`_. Check out their documentation on their
+website.
+
 Setup 🔧
 =====
 
@@ -56,7 +61,7 @@ A possible configuration is:
 .. code-block:: bash
 
     # Application context
-    APPLICATION_CONTEXT=/api/fs/v1
+    APPLICATION_CONTEXT=/api/filesystem/v1
 
     # version of OpenAPI
     OPENAPI=3.0.3
