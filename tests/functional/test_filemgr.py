@@ -299,7 +299,7 @@ class TestFileManagerDownload:
         )
         headers = response.headers
         assert response.status_code == 200
-        assert headers["Content-Disposition"] == f"attachment; filename=file.txt"
+        assert headers["Content-Disposition"] == "attachment; filename=file.txt"
         assert headers["Content-Type"] == "text/plain; charset=utf-8"
 
     def test_multiple_files_download_action(self, client, fs):
