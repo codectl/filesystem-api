@@ -20,12 +20,12 @@ class Filesystem(Resource):
         List files in given path.
         ---
         parameters:
-        - in: path
-          name: path
-          schema:
-            type: string
-          required: true
-          description: the path to list content from
+            - in: path
+              name: path
+              schema:
+                type: string
+              required: true
+              description: the path to list content from
         tags:
             - filesystem
         security:
@@ -84,12 +84,12 @@ class Filesystem(Resource):
         Create files in given path.
         ---
         parameters:
-        - in: path
-          name: path
-          schema:
-            type: string
-          required: true
-          description: the directory to create the resource at
+            - in: path
+              name: path
+              schema:
+                type: string
+              required: true
+              description: the directory to create the resource at
         tags:
             - filesystem
         security:
@@ -145,12 +145,12 @@ class Filesystem(Resource):
         Update files in given path.
         ---
         parameters:
-        - in: path
-          name: path
-          schema:
-            type: string
-          required: true
-          description: the directory to update the resource at
+            - in: path
+              name: path
+              schema:
+                type: string
+              required: true
+              description: the directory to update the resource at
         tags:
             - filesystem
         security:
