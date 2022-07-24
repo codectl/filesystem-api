@@ -169,11 +169,7 @@ class Filesystem(Resource):
                                     description: file to update
         responses:
             204:
-                content:
-                    application/json:
-                        schema:
-                            "$ref": "#/components/schemas/HttpResponse"
-
+                description: the resource was updated
             400:
                 $ref: "#/components/responses/BadRequest"
             401:
@@ -194,7 +190,7 @@ class Filesystem(Resource):
                 raise FileNotFoundError("a file does not exist in given path")
             for file in files:
                 svc.save_file(path, file=file)
-            return utils.http_response(204), 204
+            return None, 204
         except PermissionError as ex:
             utils.abort_with(code=403, message=str(ex))
         except FileNotFoundError as ex:
