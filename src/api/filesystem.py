@@ -217,7 +217,7 @@ class Filesystem(Resource):
                 content:
                     application/json:
                         schema:
-                            "$ref": "#/components/schemas/HttpResponse"
+                            $ref: "#/components/schemas/HttpResponse"
 
             400:
                 $ref: "#/components/responses/BadRequest"
