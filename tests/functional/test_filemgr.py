@@ -249,12 +249,12 @@ class TestFileManagerActions:
         assert fs.exists("/tmp/dst/file (1).txt") is True
 
     def test_missing_path_sends_error(self, client, fs):
-        fs.create_dir("/tmp")
+        fs.create_dir("/tmp/files")
         response = client.post(
             "/file-manager/actions",
             json={
                 "action": "read",
-                "path": "/tmp/file.txt",
+                "path": "/tmp/files/file.txt",
                 "showHiddenItems": True,
                 "data": [],
             },
@@ -326,14 +326,14 @@ class TestFileManagerDownload:
         assert headers["Content-Type"] == "application/gzip"
 
     def test_missing_path_raises_404(self, client, fs):
-        fs.create_dir("/tmp")
+        fs.create_dir("/tmp/files")
         response = client.post(
             "/file-manager/download",
             data={
                 "downloadInput": json.dumps(
                     {
                         "action": "download",
-                        "path": "/tmp",
+                        "path": "/tmp/files",
                         "names": ["file.txt"],
                         "data": [],
                     }
@@ -346,29 +346,29 @@ class TestFileManagerDownload:
 
 class TestFileManagerUpload:
     def test_file_upload_action(self, client, fs):
-        fs.create_dir("/tmp")
+        fs.create_dir("/tmp/files")
         response = client.post(
             "/file-manager/upload",
             data={
                 "action": "save",
-                "path": "/tmp",
+                "path": "/tmp/files",
                 "cancel-uploading": False,
                 "uploadFiles": (io.BytesIO(b"text"), "file.txt"),
             },
             content_type="multipart/form-data",
         )
         assert response.status_code == 200
-        assert fs.exists("/tmp/file.txt") is True
-        with open("/tmp/file.txt") as fd:
+        assert fs.exists("/tmp/files/file.txt") is True
+        with open("/tmp/files/file.txt") as fd:
             assert fd.read() == "text"
 
     def test_missing_path_raises_404(self, client, fs):
-        fs.create_dir("/tmp")
+        fs.create_dir("/tmp/dirs")
         response = client.post(
             "/file-manager/upload",
             data={
                 "action": "save",
-                "path": "/tmp/dir",
+                "path": "/tmp/dirs/dir",
                 "cancel-uploading": False,
                 "uploadFiles": (None, "file.txt"),
             },
@@ -391,10 +391,10 @@ class TestFileManagerImages:
         assert headers["Content-Type"] == "image/jpeg"
 
     def test_missing_path_raises_404(self, client, fs):
-        fs.create_dir("/tmp")
+        fs.create_dir("/tmp/files")
         response = client.get(
             "/file-manager/images",
-            query_string={"path": "/tmp/img.jpeg"},
+            query_string={"path": "/tmp/files/img.jpeg"},
         )
         assert response.status_code == 404
         assert response.json == {"code": 404, "reason": "Not Found", "message": ""}
