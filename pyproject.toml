@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "filesystem-api"
-version = "0.1.0"
+version = "0.1.1"
 description = "A RESTful API for CRUD operations over files in current filesystem."
 authors = ["Renato Damas <rena2damas@gmail.com>"]
 license = "LICENSE"
@@ -45,7 +45,7 @@ gunicorn = "^20.1.0"
 python = "^3.9"
 
 [tool.poetry.dev-dependencies]
-coverage = "^6.4.2"
+coverage = "^6.4.4"
 pre-commit = "^2.20.0"
 pyfakefs = "^4.6.3"
 pytest = "^7.1.2"
