@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "filesystem-api"
-version = "0.1.0"
+version = "0.1.1"
 description = "A RESTful API for CRUD operations over files in current filesystem."
 authors = ["Renato Damas <rena2damas@gmail.com>"]
 license = "LICENSE"
