@@ -18,14 +18,14 @@ class TestFilesystemGET:
         assert response.status_code == 401
 
     def test_valid_path_returns_200(self, client, auth, fs):
-        fs.create_file("/tmp/file.txt")
-        response = client.get("/tmp/", headers=auth)
+        fs.create_file("/tmp/files/file.txt")
+        response = client.get("/tmp/files/", headers=auth)
         assert response.status_code == 200
         assert response.json == ["file.txt"]
 
     def test_permission_denied_returns_403(self, client, auth, fs):
-        fs.create_dir("/tmp/root", perm_bits=000)
-        response = client.get("/tmp/root/", headers=auth)
+        fs.create_dir("/tmp/files/root", perm_bits=000)
+        response = client.get("/tmp/files/root/", headers=auth)
         data = response.json
         assert response.status_code == 403
         assert data["code"] == 403
@@ -33,8 +33,8 @@ class TestFilesystemGET:
         assert "Permission denied" in data["message"]
 
     def test_missing_path_returns_404(self, client, auth, fs):
-        fs.create_dir("/tmp")
-        response = client.get("/tmp/missing/", headers=auth)
+        fs.create_dir("/tmp/files/")
+        response = client.get("/tmp/files/missing/", headers=auth)
         data = response.json
         assert response.status_code == 404
         assert data["code"] == 404
@@ -42,9 +42,9 @@ class TestFilesystemGET:
         assert "No such file or directory" in data["message"]
 
     def test_file_attachment_returns_200(self, client, auth, fs):
-        fs.create_file("/tmp/file.txt")
+        fs.create_file("/tmp/files/file.txt")
         headers = {**auth, "accept": "application/octet-stream"}
-        response = client.get("/tmp/file.txt", headers=headers)
+        response = client.get("/tmp/files/file.txt", headers=headers)
         assert response.status_code == 200
         assert (
             response.headers["Content-Disposition"] == "attachment; filename=file.txt"
@@ -52,9 +52,9 @@ class TestFilesystemGET:
         assert response.headers["Content-Type"] == "text/plain; charset=utf-8"
 
     def test_directory_attachment_returns_200(self, client, auth, fs):
-        fs.create_dir("/tmp/dir")
+        fs.create_dir("/tmp/dirs/dir")
         headers = {**auth, "accept": "application/octet-stream"}
-        response = client.get("/tmp/dir/", headers=headers)
+        response = client.get("/tmp/dirs/dir/", headers=headers)
         assert response.status_code == 200
         assert (
             response.headers["Content-Disposition"] == "attachment; filename=dir.tar.gz"
@@ -63,7 +63,7 @@ class TestFilesystemGET:
 
     def test_unsupported_accept_header_path_returns_400(self, client, auth):
         headers = {**auth, "accept": "text/html"}
-        response = client.get("/tmp/", headers=headers)
+        response = client.get("/tmp/files/", headers=headers)
         assert response.status_code == 400
         assert response.json == {
             "code": 400,
@@ -74,22 +74,22 @@ class TestFilesystemGET:
 
 class TestFilesystemPOST:
     def test_file_returns_201(self, client, auth, fs):
-        fs.create_dir("/tmp")
+        fs.create_dir("/tmp/files/")
         response = client.post(
-            "/tmp/",
+            "/tmp/files/",
             headers=auth,
             data={"files": (io.BytesIO(b"text"), "file.txt")},
             content_type="multipart/form-data",
         )
         assert response.status_code == 201
-        assert fs.exists("/tmp/file.txt") is True
-        with open("/tmp/file.txt") as fd:
+        assert fs.exists("/tmp/files/file.txt") is True
+        with open("/tmp/files/file.txt") as fd:
             assert fd.read() == "text"
 
     def test_missing_path_returns_400(self, client, auth, fs):
-        fs.create_dir("/tmp")
+        fs.create_dir("/tmp/files/")
         response = client.post(
-            "/tmp/missing/",
+            "/tmp/files/missing/",
             headers=auth,
             data={"files": (None, "file.txt")},
             content_type="multipart/form-data",
@@ -101,9 +101,9 @@ class TestFilesystemPOST:
         assert "No such file or directory" in data["message"]
 
     def test_missing_data_returns_400(self, client, auth, fs):
-        fs.create_dir("/tmp")
+        fs.create_dir("/tmp/files/")
         response = client.post(
-            "/tmp/",
+            "/tmp/files/",
             headers=auth,
             data={},
             content_type="multipart/form-data",
@@ -116,9 +116,9 @@ class TestFilesystemPOST:
         }
 
     def test_create_existing_file_returns_400(self, client, auth, fs):
-        fs.create_file("/tmp/file.txt")
+        fs.create_file("/tmp/files/file.txt")
         response = client.post(
-            "/tmp/",
+            "/tmp/files/",
             headers=auth,
             data={"files": (None, "file.txt")},
             content_type="multipart/form-data",
@@ -131,9 +131,9 @@ class TestFilesystemPOST:
         }
 
     def test_permission_denied_returns_403(self, client, auth, fs):
-        fs.create_dir("/tmp/root", perm_bits=000)
+        fs.create_dir("/tmp/files/root", perm_bits=000)
         response = client.post(
-            "/tmp/root/",
+            "/tmp/files/root/",
             headers=auth,
             data={"files": (io.BytesIO(b"text"), "file.txt")},
             content_type="multipart/form-data",
@@ -147,21 +147,21 @@ class TestFilesystemPOST:
 
 class TestFilesystemPUT:
     def test_valid_file_returns_204(self, client, auth, fs):
-        fs.create_file("/tmp/file.txt")
+        fs.create_file("/tmp/files/file.txt")
         response = client.put(
-            "/tmp/",
+            "/tmp/files/",
             headers=auth,
             data={"files": (io.BytesIO(b"text"), "file.txt")},
             content_type="multipart/form-data",
         )
         assert response.status_code == 204
-        with open("/tmp/file.txt") as fd:
+        with open("/tmp/files/file.txt") as fd:
             assert fd.read() == "text"
 
     def test_missing_file_path_returns_400(self, client, auth, fs):
-        fs.create_dir("/tmp")
+        fs.create_dir("/tmp/files/")
         response = client.put(
-            "/tmp/",
+            "/tmp/files/",
             headers=auth,
             data={"files": (None, "file.txt")},
             content_type="multipart/form-data",
@@ -174,9 +174,9 @@ class TestFilesystemPUT:
         }
 
     def test_wrong_path_returns_400(self, client, auth, fs):
-        fs.create_dir("/tmp")
+        fs.create_dir("/tmp/files/")
         response = client.put(
-            "/tmp/file.txt",
+            "/tmp/files/file.txt",
             headers=auth,
             data={"files": (None, "file.txt")},
             content_type="multipart/form-data",
@@ -189,9 +189,9 @@ class TestFilesystemPUT:
         }
 
     def test_permission_denied_returns_403(self, client, auth, fs):
-        fs.create_file("/tmp/root.txt", st_mode=0o000)
+        fs.create_file("/tmp/files/root.txt", st_mode=0o000)
         response = client.put(
-            "/tmp/",
+            "/tmp/files/",
             headers=auth,
             data={"files": (None, "root.txt")},
             content_type="multipart/form-data",
@@ -205,20 +205,20 @@ class TestFilesystemPUT:
 
 class TestFilesystemDELETE:
     def test_valid_file_returns_204(self, client, auth, fs):
-        fs.create_file("/tmp/file.txt")
-        response = client.delete("/tmp/file.txt", headers=auth)
+        fs.create_file("/tmp/files/file.txt")
+        response = client.delete("/tmp/files/file.txt", headers=auth)
         assert response.status_code == 204
-        assert fs.exists("/tmp/file.txt") is False
+        assert fs.exists("/tmp/files/file.txt") is False
 
     def test_valid_dir_returns_204(self, client, auth, fs):
-        fs.create_dir("/tmp/dir")
-        response = client.delete("/tmp/dir/", headers=auth)
+        fs.create_dir("/tmp/dirs/dir")
+        response = client.delete("/tmp/dirs/dir/", headers=auth)
         assert response.status_code == 204
-        assert fs.exists("/tmp/dir") is False
+        assert fs.exists("/tmp/dirs/dir") is False
 
     def test_delete_missing_path_returns_404(self, client, auth, fs):
-        fs.create_dir("/tmp")
-        response = client.delete("/tmp/file.txt", headers=auth)
+        fs.create_dir("/tmp/files/")
+        response = client.delete("/tmp/files/file.txt", headers=auth)
         data = response.json
         assert response.status_code == 400
         assert data["code"] == 400
@@ -226,8 +226,8 @@ class TestFilesystemDELETE:
         assert "No such file or directory" in data["message"]
 
     def test_permission_denied_returns_403(self, client, auth, fs):
-        fs.create_dir("/tmp/root", perm_bits=000)
-        response = client.delete("/tmp/root", headers=auth)
+        fs.create_dir("/tmp/files/root", perm_bits=000)
+        response = client.delete("/tmp/files/root", headers=auth)
         data = response.json
         assert response.status_code == 403
         assert data["code"] == 403
