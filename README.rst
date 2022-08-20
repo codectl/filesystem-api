@@ -18,8 +18,8 @@ filesystem-api
 A RESTful API service that provides CRUD operations in the current filesystem over HTTP.
 
 The API is also a Python implementation of a `File Manager Provider <https://ej2
-.syncfusion.com/react/documentation/file-manager/file-system-provider/>`_ by
-`Syncfusion <https://www.syncfusion.com/>`_. Check out their documentation on their
+.syncfusion.com/react/documentation/file-manager/file-system-provider/>`__ by
+`Syncfusion <https://www.syncfusion.com/>`__. Check out their documentation on their
 website.
 
 Setup 🔧
@@ -30,7 +30,7 @@ One can run it directly on the system with ``python`` or get it running on a
 
 Python
 ------
-The project uses `poetry <https://python-poetry.org/>`_ for dependency management
+The project uses `poetry <https://python-poetry.org/>`__ for dependency management
 . Therefore to set up the project (recommended):
 
 .. code-block:: bash
@@ -44,7 +44,7 @@ dependencies, which is particular useful during development stage.
 
 Kubernetes
 ----------
-Refer to `README <.kustomization/README.rst>`_ under ``.kustomization/``.
+Refer to `README <.kustomization/README.rst>`__ under ``.kustomization/``.
 
 Configuration 📄
 -------------
@@ -107,4 +107,4 @@ Optionally, run coverage as well with:
 
 License
 =======
-MIT licensed. See `LICENSE <LICENSE>`_.
+MIT licensed. See `LICENSE <LICENSE>`__.
