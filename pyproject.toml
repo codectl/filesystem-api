@@ -3,7 +3,7 @@ name = "filesystem-api"
 version = "0.1.1"
 description = "A RESTful API for CRUD operations over files in current filesystem."
 authors = ["Renato Damas <rena2damas@gmail.com>"]
-license = "LICENSE"
+license = "MIT"
 readme = "README.rst"
 packages = [
     { include = "*", from = "src" }
