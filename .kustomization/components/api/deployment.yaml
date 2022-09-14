@@ -7,7 +7,7 @@ metadata:
     app: filesystem-api
     framework: flask
   annotations:
-    a8r.io/description: "CRUD operations in the current filesystem"
+    a8r.io/description: CRUD operations in the current filesystem
     a8r.io/owner: renatodamas
 
 spec:
