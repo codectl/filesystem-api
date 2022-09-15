@@ -51,7 +51,7 @@ RUN chown -R 1000:1000 .
 RUN chmod -R 0500 .
 
 # run process as non root
-USER 1000:1000
+USER filesystem-api
 
 # command to run on container start
 ARG env="production"
