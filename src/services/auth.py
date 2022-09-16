@@ -1,6 +1,5 @@
 import os
 import functools
-import inspect
 
 from src import utils
 
@@ -46,7 +45,7 @@ def impersonate(username=None):
             self = next(iter(args), None)
             name = (
                 getattr(self, "username", None)
-                if not username and inspect.isclass(self)
+                if not username and hasattr(self, "__class__")
                 else username
             )
             with user_ctx(name):
