@@ -13,19 +13,17 @@ password = os.environ["PASSWORD"]
 directory = "tmp"
 filename = "sample.txt"
 content = b"This is a sample"
-tmp = tempfile.TemporaryFile()
-tmp.write(content)
-tmp.seek(0)
+file = tempfile.TemporaryFile()
 
-# POST request
-r = requests.post(
-    url=f"{base_url}/{directory}",
-    headers={"accept": "application/json"},
-    auth=(username, password),
-    files={"files": (filename, tmp)},
-)
-
-tmp.close()  # delete file
+# POST request to create resource
+with file as fd:
+    fd.write(content)
+    r = requests.post(
+        url=f"{base_url}/{directory}",
+        headers={"accept": "application/json"},
+        auth=(username, password),
+        files={"files": (filename, fd)},
+    )
 
 assert r.status_code in (201, 400)  # file may already exist
 
@@ -50,3 +48,22 @@ r = requests.get(
 
 assert r.status_code == 200
 assert r.raw.read() == content
+
+# UPDATE request for resource update (content is overridden)
+r = requests.update(
+    url=f"{base_url}/{directory}/{filename}",
+    headers={"accept": "application/json"},
+    auth=(username, password),
+    files={"files": (filename, b"updated content")},
+)
+
+assert r.status_code == 204
+
+# DELETE request for resource deletion
+r = requests.delete(
+    url=f"{base_url}/{directory}/{filename}",
+    headers={"accept": "application/json"},
+    auth=(username, password),
+)
+
+assert r.status_code == 204
