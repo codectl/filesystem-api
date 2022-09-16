@@ -6,4 +6,4 @@ metadata:
 data:
 
   # URL context for the application
-  APPLICATION_CONTEXT: /api/filesystem/v1
+  APPLICATION_ROOT: /api/filesystem/v1
