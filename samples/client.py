@@ -13,19 +13,19 @@ password = os.environ["PASSWORD"]
 directory = "tmp"
 filename = "sample.txt"
 content = b"This is a sample"
-file = tempfile.TemporaryFile()
 
 # POST request to create resource
-with file as fd:
-    fd.write(content)
+with tempfile.TemporaryFile() as f:
+    f.write(content)
+    f.seek(0)
     r = requests.post(
         url=f"{base_url}/{directory}",
         headers={"accept": "application/json"},
         auth=(username, password),
-        files={"files": (filename, fd)},
+        files={"files": (filename, f)},
     )
 
-assert r.status_code in (201, 400)  # file may already exist
+assert r.status_code == 201
 
 # GET request (json format)
 r = requests.get(
@@ -51,7 +51,7 @@ assert r.raw.read() == content
 
 # PUT request for resource update (content is overridden)
 r = requests.put(
-    url=f"{base_url}/{directory}/{filename}",
+    url=f"{base_url}/{directory}/",
     headers={"accept": "application/json"},
     auth=(username, password),
     files={"files": (filename, b"updated content")},
