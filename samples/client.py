@@ -9,7 +9,6 @@ base_url = "http://localhost:5000/api/filesystem/v1"
 username = os.environ["USERNAME"]
 password = os.environ["PASSWORD"]
 
-# create a sample temporary file
 directory = "tmp"
 filename = "sample.txt"
 content = b"This is a sample"
