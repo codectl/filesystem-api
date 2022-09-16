@@ -5,8 +5,8 @@ metadata:
   name: filesystem-api
 data:
 
-    # application root context
-    APPLICATION_ROOT: /api/filesystem/v1
+  # application root context
+  APPLICATION_ROOT: /api/filesystem/v1
 
-    # OPENAPI supported version
-    OPENAPI: 3.0.3
+  # OPENAPI supported version
+  OPENAPI: 3.0.3
