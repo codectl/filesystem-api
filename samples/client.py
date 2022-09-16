@@ -23,8 +23,7 @@ with tempfile.TemporaryFile() as f:
         auth=(username, password),
         files={"files": (filename, f)},
     )
-
-assert r.status_code == 201
+    assert r.status_code == 201
 
 # GET request (json format)
 r = requests.get(
@@ -32,7 +31,6 @@ r = requests.get(
     headers={"accept": "application/json"},
     auth=(username, password),
 )
-
 assert r.status_code == 200
 assert "sample.txt" in r.json()
 
@@ -44,7 +42,6 @@ r = requests.get(
     auth=(username, password),
     stream=True,
 )
-
 assert r.status_code == 200
 assert r.raw.read() == content
 
@@ -55,7 +52,6 @@ r = requests.put(
     auth=(username, password),
     files={"files": (filename, b"updated content")},
 )
-
 assert r.status_code == 204
 
 # DELETE request for resource deletion
@@ -64,5 +60,4 @@ r = requests.delete(
     headers={"accept": "application/json"},
     auth=(username, password),
 )
-
 assert r.status_code == 204
