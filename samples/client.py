@@ -49,8 +49,8 @@ r = requests.get(
 assert r.status_code == 200
 assert r.raw.read() == content
 
-# UPDATE request for resource update (content is overridden)
-r = requests.update(
+# PUT request for resource update (content is overridden)
+r = requests.put(
     url=f"{base_url}/{directory}/{filename}",
     headers={"accept": "application/json"},
     auth=(username, password),
