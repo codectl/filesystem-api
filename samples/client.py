@@ -1,3 +1,4 @@
+import os
 import tempfile
 
 import requests
@@ -5,8 +6,8 @@ import requests
 
 # edit these variables accordingly
 base_url = "http://localhost:5000/api/filesystem/v1"
-username = "renato"
-password = "password"
+username = os.environ["USERNAME"]
+password = os.environ["PASSWORD"]
 
 # create a sample temporary file
 directory = "/tmp"
