@@ -31,7 +31,6 @@ def impersonate(username=None):
                 pass  # suppress missing privileges
 
     def wrapper(func):
-
         @functools.wraps(func)
         def decorated(*args, **kwargs):
             self = next(iter(args), None)
