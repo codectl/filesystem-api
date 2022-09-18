@@ -1,7 +1,9 @@
 import os
 import functools
+import sys
+import traceback
 
-from multiprocessing import Process
+from multiprocessing import Process, Queue, get_context
 
 from src import utils
 
@@ -12,6 +14,26 @@ class AuthSvc:
     @staticmethod
     def authenticate(username, password):
         return True
+
+
+def target(queue, el):
+    queue.put(el)
+
+
+def process():
+    def wrapper(fn):
+        ctx = get_context("spawn")
+        queue = ctx.Queue(maxsize=1)
+
+        @functools.wraps(fn)
+        def decorated(*args, **kwargs):
+            ret = fn(*args, **kwargs)
+            ctx.Process(target=target, args=(queue, ret)).start()
+            return queue.get()
+
+        return decorated
+
+    return wrapper
 
 
 def impersonate(username=None):
@@ -30,6 +52,9 @@ def impersonate(username=None):
             except PermissionError:
                 pass  # suppress missing privileges
 
+        def __exit__(self, exc_type, exc_value, exc_traceback):
+            pass
+
     def wrapper(func):
         @functools.wraps(func)
         def decorated(*args, **kwargs):
@@ -41,9 +66,7 @@ def impersonate(username=None):
             )
 
             with UserCtx(usrname=name):
-                p = Process(target=func, args=args, kwargs=kwargs)
-                p.start()
-                p.join()
+                return func(*args, **kwargs)
 
         return decorated
 
