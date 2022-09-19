@@ -7,7 +7,7 @@ from multiprocessing import Process, Queue, get_context
 
 from src import utils
 
-__all__ = ("AuthSvc", "impersonate")
+__all__ = ("AuthSvc", "process")
 
 
 class AuthSvc:

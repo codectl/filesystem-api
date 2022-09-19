@@ -1,7 +1,7 @@
-from datetime import datetime
 import os
-import pathlib
 import re
+from datetime import datetime
+from pathlib import Path
 
 from src.services.filesystem import FilesystemSvc
 
@@ -12,29 +12,28 @@ class FileManagerSvc(FilesystemSvc):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def list_files(self, path, show_hidden=False, substr=None):
+    def list(self, path, show_hidden=False, substr=None):
         """Override"""
         regex = rf".*{(substr or '').strip('*')}.*"
-        files = super().list_files(path, show_hidden=show_hidden)
+        files = super().list(path, show_hidden=show_hidden)
         return [file for file in files if re.match(regex, file.name)]
 
-    def stats(self, path):
+    def stats(self, path) -> dict:
         """Override"""
         return self.stats_mapper(path, stats=super().stats(path))
 
     @staticmethod
     def stats_mapper(path: str, stats: os.stat_result) -> dict:
-        path = os.path.join(os.path.sep, path.strip(os.path.sep))
-        isdir = os.path.isdir(path)
+        path = Path(path)
         return {
-            "name": os.path.basename(path),
-            "path": path,
-            "filterPath": os.path.join(os.path.dirname(path), ""),
+            "name": path.name,
+            "path": path.as_posix(),
+            "filterPath": os.path.join(path.parent, ""),
             "size": stats.st_size,
-            "isFile": not isdir,
+            "isFile": not path.is_dir(),
             "dateModified": datetime.fromtimestamp(stats.st_mtime),
             "dateCreated": datetime.fromtimestamp(stats.st_ctime),
-            "type": pathlib.Path(path).suffix,
-            "hasChild": bool(next(os.walk(path), ((), ()))[1]) if isdir else False,
+            "type": path.suffix,
+            "hasChild": bool(next(path.iterdir(), False)) if path.is_dir() else False,
             "mode": stats.st_mode,
         }
