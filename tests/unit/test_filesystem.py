@@ -29,6 +29,7 @@ class TestFilesystemSvc:
         filedir.chmod(0o000)
         with pytest.raises(PermissionError) as ex:
             svc.list(path=filedir)
+        filedir.chmod(0o755)
         assert "Permission denied" in str(ex.value)
 
     def test_stats(self, svc, file):
@@ -72,8 +73,11 @@ class TestFilesystemSvc:
             assert svc.stats(path=file)
             assert svc.stats(path=filedir / "xyz")
 
-    def test_move(self, svc, file, filedir, tmp_path_factory):
-        dst = tmp_path_factory.mktemp("dst")
+    def test_move(self, svc, file, tmp_path):
+        dst = tmp_path / "dst"
+        filedir = tmp_path / "dir"
+        dst.mkdir()
+        filedir.mkdir()
         svc.move(src=file, dst=dst)
         svc.move(src=filedir, dst=dst)
         assert svc.exists(dst / file.name) is True
@@ -83,11 +87,17 @@ class TestFilesystemSvc:
         with pytest.raises(FileNotFoundError):
             svc.move(src=file, dst=filedir / "xyz")
 
-    def test_rename(self, svc, file, filedir):
-        svc.rename(src=file, dst=file.parent / "new-file")
-        svc.rename(src=filedir, dst=filedir.parent / "new-dir")
-        assert svc.exists(path=file.parent / "new-file") is True
-        assert svc.exists(path=filedir.parent / "new-dir") is True
+    def test_rename(self, svc, tmp_path):
+        file = tmp_path / "file1.txt"
+        file.touch()
+        filedir = tmp_path / "dir1"
+        filedir.mkdir()
+        svc.rename(src=file, dst=file.parent / "file2.txt")
+        svc.rename(src=filedir, dst=filedir.parent / "dir2")
+        assert svc.exists(path=file.parent / "file1.txt") is False
+        assert svc.exists(path=file.parent / "file2.txt") is True
+        assert svc.exists(path=filedir.parent / "dir1") is False
+        assert svc.exists(path=filedir.parent / "dir2") is True
 
     def test_rename_missing_path_throws_exception(self, svc, file, filedir):
         with pytest.raises(FileNotFoundError):

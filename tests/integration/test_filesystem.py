@@ -4,6 +4,12 @@ from base64 import b64encode
 import pytest
 
 from src.services.auth import AuthSvc
+from src.services.filemgr import FileManagerSvc
+
+
+@pytest.fixture(scope="class")
+def svc():
+    return FileManagerSvc(username="test")
 
 
 @pytest.fixture()
@@ -13,57 +19,59 @@ def auth(mocker):
 
 
 class TestFilesystemGET:
-    def test_unauthorized_request_throws_401(self, client):
-        response = client.get("/tmp", headers={})
+    def test_unauthorized_request_throws_401(self, client, file):
+        path = file.as_posix()
+        response = client.get(path, headers={})
         assert response.status_code == 401
 
-    def test_valid_path_returns_200(self, client, auth, fs):
-        fs.create_file("/tmp/files/file.txt")
-        response = client.get("/tmp/files/", headers=auth)
+    def test_valid_path_returns_200(self, client, auth, file):
+        path = file.parent.as_posix()
+        response = client.get(path, headers=auth)
         assert response.status_code == 200
         assert response.json == ["file.txt"]
 
-    def test_permission_denied_returns_403(self, client, auth, fs):
-        fs.create_dir("/tmp/files/root", perm_bits=000)
-        response = client.get("/tmp/files/root/", headers=auth)
+    def test_permission_denied_returns_403(self, client, auth, filedir):
+        path = filedir.as_posix()
+        filedir.chmod(0o000)
+        response = client.get(path, headers=auth)
+        filedir.chmod(0o755)
         data = response.json
         assert response.status_code == 403
         assert data["code"] == 403
         assert data["reason"] == "Forbidden"
         assert "Permission denied" in data["message"]
 
-    def test_missing_path_returns_404(self, client, auth, fs):
-        fs.create_dir("/tmp/files/")
-        response = client.get("/tmp/files/missing/", headers=auth)
+    def test_missing_path_returns_404(self, client, auth, tmp_path):
+        path = (tmp_path / "dir").as_posix()
+        response = client.get(path, headers=auth)
         data = response.json
         assert response.status_code == 404
         assert data["code"] == 404
         assert data["reason"] == "Not Found"
         assert "No such file or directory" in data["message"]
 
-    def test_file_attachment_returns_200(self, client, auth, fs):
-        fs.create_file("/tmp/files/file.txt")
+    def test_file_attachment_returns_200(self, client, auth, file):
+        path = file.as_posix()
         headers = {**auth, "accept": "application/octet-stream"}
-        response = client.get("/tmp/files/file.txt", headers=headers)
+        response = client.get(path, headers=headers)
+        headers = response.headers
         assert response.status_code == 200
-        assert (
-            response.headers["Content-Disposition"] == "attachment; filename=file.txt"
-        )
-        assert response.headers["Content-Type"] == "text/plain; charset=utf-8"
+        assert headers["Content-Disposition"] == "attachment; filename=file.txt"
+        assert headers["Content-Type"] == "text/plain; charset=utf-8"
 
-    def test_directory_attachment_returns_200(self, client, auth, fs):
-        fs.create_dir("/tmp/dirs/dir")
+    def test_directory_attachment_returns_200(self, client, auth, filedir):
+        path = filedir.as_posix()
         headers = {**auth, "accept": "application/octet-stream"}
-        response = client.get("/tmp/dirs/dir/", headers=headers)
+        response = client.get(path, headers=headers)
+        headers = response.headers
         assert response.status_code == 200
-        assert (
-            response.headers["Content-Disposition"] == "attachment; filename=dir.tar.gz"
-        )
-        assert response.headers["Content-Type"] == "application/gzip"
+        assert headers["Content-Disposition"] == "attachment; filename=dir.tar.gz"
+        assert headers["Content-Type"] == "application/gzip"
 
-    def test_unsupported_accept_header_path_returns_400(self, client, auth):
+    def test_unsupported_accept_header_path_returns_400(self, client, auth, tmp_path):
+        path = tmp_path.as_posix()
         headers = {**auth, "accept": "text/html"}
-        response = client.get("/tmp/files/", headers=headers)
+        response = client.get(path, headers=headers)
         assert response.status_code == 400
         assert response.json == {
             "code": 400,
@@ -73,25 +81,23 @@ class TestFilesystemGET:
 
 
 class TestFilesystemPOST:
-    def test_file_returns_201(self, client, auth, fs):
-        fs.create_dir("/tmp/files/")
+    def test_create_file_returns_201(self, client, auth, file, filedir):
+        path = filedir.as_posix()
         response = client.post(
-            "/tmp/files/",
+            path,
             headers=auth,
-            data={"files": (io.BytesIO(b"text"), "file.txt")},
+            data={"files": (io.BytesIO(b"new content"), file.name)},
             content_type="multipart/form-data",
         )
         assert response.status_code == 201
-        assert fs.exists("/tmp/files/file.txt") is True
-        with open("/tmp/files/file.txt") as fd:
-            assert fd.read() == "text"
+        assert file.exists() is True
 
-    def test_missing_path_returns_400(self, client, auth, fs):
-        fs.create_dir("/tmp/files/")
+    def test_missing_path_returns_400(self, client, auth, file, tmp_path):
+        path = (tmp_path / "xyz").as_posix()
         response = client.post(
-            "/tmp/files/missing/",
+            path,
             headers=auth,
-            data={"files": (None, "file.txt")},
+            data={"files": (None, file.name)},
             content_type="multipart/form-data",
         )
         data = response.json
@@ -100,10 +106,10 @@ class TestFilesystemPOST:
         assert data["reason"] == "Bad Request"
         assert "No such file or directory" in data["message"]
 
-    def test_missing_data_returns_400(self, client, auth, fs):
-        fs.create_dir("/tmp/files/")
+    def test_missing_data_returns_400(self, client, auth, tmp_path):
+        path = tmp_path.as_posix()
         response = client.post(
-            "/tmp/files/",
+            path,
             headers=auth,
             data={},
             content_type="multipart/form-data",
@@ -115,12 +121,12 @@ class TestFilesystemPOST:
             "reason": "Bad Request",
         }
 
-    def test_create_existing_file_returns_400(self, client, auth, fs):
-        fs.create_file("/tmp/files/file.txt")
+    def test_create_existing_file_returns_400(self, client, auth, file):
+        path = file.parent.as_posix()
         response = client.post(
-            "/tmp/files/",
+            path,
             headers=auth,
-            data={"files": (None, "file.txt")},
+            data={"files": (None, file.name)},
             content_type="multipart/form-data",
         )
         assert response.status_code == 400
@@ -130,14 +136,16 @@ class TestFilesystemPOST:
             "reason": "Bad Request",
         }
 
-    def test_permission_denied_returns_403(self, client, auth, fs):
-        fs.create_dir("/tmp/files/root", perm_bits=000)
+    def test_permission_denied_returns_403(self, client, auth, filedir, file):
+        path = filedir.as_posix()
+        filedir.chmod(mode=0o000)
         response = client.post(
-            "/tmp/files/root/",
+            path,
             headers=auth,
-            data={"files": (io.BytesIO(b"text"), "file.txt")},
+            data={"files": (io.BytesIO(b"text"), file.name)},
             content_type="multipart/form-data",
         )
+        filedir.chmod(mode=0o444)
         data = response.json
         assert response.status_code == 403
         assert data["code"] == 403
@@ -146,24 +154,22 @@ class TestFilesystemPOST:
 
 
 class TestFilesystemPUT:
-    def test_valid_file_returns_204(self, client, auth, fs):
-        fs.create_file("/tmp/files/file.txt")
+    def test_update_file_returns_204(self, client, auth, file):
+        path = file.parent.as_posix()
         response = client.put(
-            "/tmp/files/",
+            path,
             headers=auth,
-            data={"files": (io.BytesIO(b"text"), "file.txt")},
+            data={"files": (io.BytesIO(b"new content"), file.name)},
             content_type="multipart/form-data",
         )
         assert response.status_code == 204
-        with open("/tmp/files/file.txt") as fd:
-            assert fd.read() == "text"
 
-    def test_missing_file_path_returns_400(self, client, auth, fs):
-        fs.create_dir("/tmp/files/")
+    def test_update_missing_file_returns_400(self, client, auth, file, filedir):
+        path = filedir.as_posix()
         response = client.put(
-            "/tmp/files/",
+            path,
             headers=auth,
-            data={"files": (None, "file.txt")},
+            data={"files": (None, file.name)},
             content_type="multipart/form-data",
         )
         assert response.status_code == 400
@@ -173,12 +179,12 @@ class TestFilesystemPUT:
             "message": "a file does not exist in given path",
         }
 
-    def test_wrong_path_returns_400(self, client, auth, fs):
-        fs.create_dir("/tmp/files/")
+    def test_wrong_path_returns_400(self, client, auth, file, tmp_path):
+        path = (tmp_path / "xyz").as_posix()
         response = client.put(
-            "/tmp/files/file.txt",
+            path,
             headers=auth,
-            data={"files": (None, "file.txt")},
+            data={"files": (None, file.name)},
             content_type="multipart/form-data",
         )
         assert response.status_code == 400
@@ -188,14 +194,16 @@ class TestFilesystemPUT:
             "message": "a file does not exist in given path",
         }
 
-    def test_permission_denied_returns_403(self, client, auth, fs):
-        fs.create_file("/tmp/files/root.txt", st_mode=0o000)
+    def test_permission_denied_returns_403(self, client, auth, filedir, file):
+        path = filedir.as_posix()
+        filedir.chmod(mode=0o000)
         response = client.put(
-            "/tmp/files/",
+            path,
             headers=auth,
-            data={"files": (None, "root.txt")},
+            data={"files": (None, file.name)},
             content_type="multipart/form-data",
         )
+        filedir.chmod(mode=0o444)
         data = response.json
         assert response.status_code == 403
         assert data["code"] == 403
@@ -204,30 +212,43 @@ class TestFilesystemPUT:
 
 
 class TestFilesystemDELETE:
-    def test_valid_file_returns_204(self, client, auth, fs):
-        fs.create_file("/tmp/files/file.txt")
-        response = client.delete("/tmp/files/file.txt", headers=auth)
+    def test_delete_file_returns_204(self, client, auth, file):
+        path = file.as_posix()
+        response = client.delete(path, headers=auth)
         assert response.status_code == 204
-        assert fs.exists("/tmp/files/file.txt") is False
+        assert file.exists() is False
 
-    def test_valid_dir_returns_204(self, client, auth, fs):
-        fs.create_dir("/tmp/dirs/dir")
-        response = client.delete("/tmp/dirs/dir/", headers=auth)
+    def test_delete_dir_returns_204(self, client, auth, tmp_path):
+        subdir = tmp_path / "dir"
+        subdir.mkdir()
+        path = subdir.as_posix()
+        response = client.delete(path, headers=auth)
         assert response.status_code == 204
-        assert fs.exists("/tmp/dirs/dir") is False
+        assert subdir.exists() is False
 
-    def test_delete_missing_path_returns_404(self, client, auth, fs):
-        fs.create_dir("/tmp/files/")
-        response = client.delete("/tmp/files/file.txt", headers=auth)
+    def test_delete_nonempty_dir_returns_400(self, client, auth, file):
+        path = file.parent.as_posix()
+        response = client.delete(path, headers=auth)
+        data = response.json
+        assert response.status_code == 400
+        assert data["code"] == 400
+        assert data["reason"] == "Bad Request"
+        assert "Directory not empty" in data["message"]
+
+    def test_delete_missing_file_returns_400(self, client, auth, tmp_path):
+        path = (tmp_path / "xyz").as_posix()
+        response = client.delete(path, headers=auth)
         data = response.json
         assert response.status_code == 400
         assert data["code"] == 400
         assert data["reason"] == "Bad Request"
         assert "No such file or directory" in data["message"]
 
-    def test_permission_denied_returns_403(self, client, auth, fs):
-        fs.create_dir("/tmp/files/root", perm_bits=000)
-        response = client.delete("/tmp/files/root", headers=auth)
+    def test_permission_denied_returns_403(self, client, auth, filedir):
+        path = (filedir / "file.txt").as_posix()
+        filedir.chmod(mode=0o000)
+        response = client.delete(path, headers=auth)
+        filedir.chmod(mode=0o755)
         data = response.json
         assert response.status_code == 403
         assert data["code"] == 403

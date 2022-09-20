@@ -26,6 +26,7 @@ class TestFilesystemSvc:
         filedir.chmod(mode=0o000)
         with pytest.raises(PermissionError) as ex:
             svc.list(path=filedir)
+        filedir.chmod(mode=0o755)
         assert "Permission denied" in str(ex.value)
 
     def test_stats(self, svc, file):

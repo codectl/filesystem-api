@@ -26,13 +26,13 @@ def test_convert_bytes():
 
 
 def test_normpath():
-    assert normpath("/tmp") == "/tmp"
-    assert normpath("//tmp") == "/tmp"
-    assert normpath("///tmp") == "/tmp"
-    assert normpath("tmp") == "/tmp"
-    assert normpath("/tmp/") == "/tmp"
-    assert normpath("tmp/") == "/tmp"
-    assert normpath("//tmp//") == "/tmp"
+    assert normpath("/tmp").as_posix() == "/tmp"
+    assert normpath("//tmp").as_posix() == "/tmp"
+    assert normpath("///tmp").as_posix() == "/tmp"
+    assert normpath("tmp").as_posix() == "/tmp"
+    assert normpath("/tmp/").as_posix() == "/tmp"
+    assert normpath("tmp/").as_posix() == "/tmp"
+    assert normpath("//tmp//").as_posix() == "/tmp"
 
 
 def test_response():
