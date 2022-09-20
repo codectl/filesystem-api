@@ -49,11 +49,9 @@ class TestFilesystemSvc:
         assert f.filename == file.name
 
     def test_mkdir(self, svc, filedir):
-        dirpath = filedir / "new-dir"
+        dirpath = filedir / "dir"
         svc.mkdir(path=dirpath)
         assert svc.exists(dirpath) is True
-        svc.delete(path=dirpath)
-        assert svc.exists(dirpath) is False
 
     def test_mkdir_on_existing_path_throws_exception(self, svc, filedir):
         with pytest.raises(FileExistsError) as ex:
