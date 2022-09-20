@@ -57,9 +57,9 @@ class Filesystem(Resource):
         try:
             accept = request.headers.get("accept", "application/json")
             if accept == "application/json":
-                return [file.name for file in svc.list_files(path=path)]
+                return [file.name for file in svc.list(path=path)]
             elif accept == "application/octet-stream":
-                if svc.isfile(path):  # check for regular file
+                if svc.is_file(path):  # check for regular file
                     return send_file(path, as_attachment=True)
                 else:
                     tarfile = svc.create_attachment(paths=(path,))
@@ -67,7 +67,7 @@ class Filesystem(Resource):
                         tarfile,
                         as_attachment=True,
                         mimetype="application/gzip",
-                        download_name=f"{os.path.basename(path)}.tar.gz",
+                        download_name=f"{path.name}.tar.gz",
                     )
             raise HTTPException("unsupported 'accept' HTTP header")
 
@@ -127,12 +127,10 @@ class Filesystem(Resource):
         if not files:
             utils.abort_with(code=400, message="missing files")
         try:
-            if any(
-                svc.exists_path(os.path.join(path, file.filename)) for file in files
-            ):
+            if any(svc.exists(os.path.join(path, file.filename)) for file in files):
                 raise FileExistsError("a file already exists in given path")
             for file in files:
-                svc.save_file(path, file=file)
+                svc.save(path, file=file)
             return utils.http_response(201), 201
         except PermissionError as ex:
             utils.abort_with(code=403, message=str(ex))
@@ -184,12 +182,10 @@ class Filesystem(Resource):
         if not files:
             utils.abort_with(code=400, message="missing files")
         try:
-            if not all(
-                svc.exists_path(os.path.join(path, file.filename)) for file in files
-            ):
+            if not all(svc.exists(os.path.join(path, file.filename)) for file in files):
                 raise FileNotFoundError("a file does not exist in given path")
             for file in files:
-                svc.save_file(path, file=file)
+                svc.save(path, file=file)
             return None, 204
         except PermissionError as ex:
             utils.abort_with(code=403, message=str(ex))
@@ -229,9 +225,11 @@ class Filesystem(Resource):
         path = utils.normpath(path)
         svc = FilesystemSvc(username=current_username)
         try:
-            svc.remove_path(path=path)
+            svc.delete(path=path)
             return utils.http_response(204), 204
         except PermissionError as ex:
             utils.abort_with(code=403, message=str(ex))
         except FileNotFoundError as ex:
+            utils.abort_with(code=400, message=str(ex))
+        except OSError as ex:
             utils.abort_with(code=400, message=str(ex))

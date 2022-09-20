@@ -54,17 +54,18 @@ class FileManagerActions(Resource):
             dsl.ReadActionSchema(only=("action",), unknown=EXCLUDE).load(payload)
             if payload["action"] == "read":
                 req = dsl.ReadActionSchema().load(payload)
-                files = svc.list_files(
+                files = svc.list(
                     path=req["path"],
                     show_hidden=req["showHiddenItems"],
                 )
+                print(files)
                 return sl.dump_stats(
                     cwd=svc.stats(path=req["path"]),
-                    files=[svc.stats(file.path) for file in files],
+                    files=[svc.stats(file.as_posix()) for file in files],
                 )
             elif payload["action"] == "create":
                 req = dsl.CreateActionSchema().load(payload)
-                svc.make_dir(path=req["path"], name=req["name"])
+                svc.mkdir(path=os.path.join(req["path"], req["name"]))
                 return sl.dump_stats(
                     files=[svc.stats(os.path.join(req["path"], req["name"]))],
                 )
@@ -72,7 +73,7 @@ class FileManagerActions(Resource):
                 req = dsl.DeleteActionSchema().load(payload)
                 for name in req["names"]:
                     path = os.path.join(req["path"], name)
-                    svc.remove_path(path=path)
+                    svc.delete(path=path)
                 return sl.dump_stats(
                     files=[
                         {"path": os.path.join(payload["path"], name)}
@@ -83,27 +84,27 @@ class FileManagerActions(Resource):
                 req = dsl.RenameActionSchema().load(payload)
                 src = os.path.join(req["path"], req["name"])
                 dst = os.path.join(req["path"], req["newName"])
-                if svc.exists_path(dst):
+                if svc.exists(dst):
                     return sl.dump_error(
                         code=400,
                         message=f"Cannot rename {req['name']} to "
                         f"{req['newName']}: destination already exists.",
                     )
                 else:
-                    svc.rename_path(src=src, dst=dst)
+                    svc.rename(src=src, dst=dst)
                     return sl.dump_stats(
                         files=[svc.stats(os.path.join(req["path"], req["newName"]))]
                     )
             elif payload["action"] == "search":
                 req = dsl.SearchActionSchema().load(payload)
-                files = svc.list_files(
+                files = svc.list(
                     path=req["path"],
                     substr=req["searchString"],
                     show_hidden=req["showHiddenItems"],
                 )
                 return sl.dump_stats(
                     cwd=svc.stats(path=req["path"]),
-                    files=[svc.stats(file.path) for file in files],
+                    files=[svc.stats(file.as_posix()) for file in files],
                 )
             elif payload["action"] == "details":
                 req = dsl.DetailsActionSchema().load(payload)
@@ -141,7 +142,7 @@ class FileManagerActions(Resource):
                 for name in req["names"]:
                     src = req["path"]
                     dst = req["targetPath"]
-                    path = svc.copy_path(src=os.path.join(src, name), dst=dst)
+                    path = svc.copy(src=os.path.join(src, name), dst=dst)
                     stats = svc.stats(path)
                     files.append(stats)
                 return sl.dump_stats(files=files)
@@ -153,12 +154,12 @@ class FileManagerActions(Resource):
                     src = req["path"]
                     dst = req["targetPath"]
                     if (
-                        svc.exists_path(os.path.join(dst, name))
+                        svc.exists(os.path.join(dst, name))
                         and name not in req["renameFiles"]
                     ):
                         conflicts.append(name)
                     else:
-                        path = svc.move_path(src=os.path.join(src, name), dst=dst)
+                        path = svc.move(src=os.path.join(src, name), dst=dst)
                         stats = svc.stats(path)
                         files.append(stats)
                 if conflicts:
@@ -170,6 +171,7 @@ class FileManagerActions(Resource):
                     )
                 return sl.dump_stats(files=files)
 
+        # error messages return 200 containing error codes
         except PermissionError:
             return sl.dump_error(code=403, message="Permission Denied")
         except FileNotFoundError:
@@ -214,7 +216,7 @@ class FileManagerDownload(Resource):
             paths = [os.path.join(req["downloadInput"]["path"], name) for name in names]
             if len(paths) == 1:
                 path = paths[0]
-                if svc.isfile(path):
+                if svc.is_file(path):
                     return send_file(path, as_attachment=True)
 
             tarfile = svc.create_attachment(paths=paths)
@@ -268,11 +270,11 @@ class FileManagerUpload(Resource):
             req = dsl.UploadSchema().load(payload)
             if req["action"] == "save":
                 file = request.files["uploadFiles"]
-                svc.save_file(req["path"], file=file)
+                svc.save(req["path"], file=file)
             elif req["action"] == "remove":
                 path = os.path.join(req["path"], req["cancel-uploading"])
-                if svc.exists_path(path):
-                    svc.remove_path(path)
+                if svc.exists(path):
+                    svc.delete(path)
             return utils.http_response(200), 200
         except PermissionError:
             utils.abort_with(403)
@@ -313,7 +315,7 @@ class FileManagerImages(Resource):
         path = os.path.join(os.path.sep, request.args.get("path", ""))
         svc = FileManagerSvc(username=current_username)
         try:
-            if not svc.exists_path(path):
+            if not svc.exists(path):
                 raise FileNotFoundError
             return send_file(path)
         except PermissionError:
