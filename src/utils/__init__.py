@@ -40,3 +40,7 @@ def user_uid(username):
 
 def user_gid(username):
     return pwd.getpwnam(username).pw_gid
+
+
+def system_username():
+    return pwd.getpwuid(os.getuid()).pw_name
