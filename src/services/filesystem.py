@@ -5,14 +5,13 @@ import re
 import shutil
 from pathlib import Path
 
-from src.services.auth import as_user
+from impersonation import impersonate
 
 __all__ = ("FilesystemSvc",)
 
 
-@as_user
+@impersonate
 class FilesystemSvc:
-
     @staticmethod
     def list(path, show_hidden=False) -> list[Path]:
         regex = r".*"
