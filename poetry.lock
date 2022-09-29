@@ -222,7 +222,7 @@ license = ["ukkonen"]
 
 [[package]]
 name = "impersonation"
-version = "0.1.0"
+version = "0.1.1"
 description = "Utility for user impersonation by running instructions under given user"
 category = "main"
 optional = false
@@ -508,7 +508,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "3de78f9c8d863abf1a7769dfb3ccda5c441fe0501f8328c6d9827f510e09228c"
+content-hash = "4dc14b4391bc23d8adc7176e14afdfb5b628e01fd3d5df950f566435c1e10bb2"
 
 [metadata.files]
 aniso8601 = [
@@ -628,8 +628,8 @@ identify = [
     {file = "identify-2.5.5.tar.gz", hash = "sha256:322a5699daecf7c6fd60e68852f36f2ecbb6a36ff6e6e973e0d2bb6fca203ee6"},
 ]
 impersonation = [
-    {file = "impersonation-0.1.0-py3-none-any.whl", hash = "sha256:1b16e9f90d067896788286fc03dbb4b1b1e7b54f71fd009e9eb180ee5627ddfd"},
-    {file = "impersonation-0.1.0.tar.gz", hash = "sha256:73380f2db02e9fde785760c99354a77d2ebc7c8cf57222540adc29bce7b67ca5"},
+    {file = "impersonation-0.1.1-py3-none-any.whl", hash = "sha256:00d696349e3535696ae1812c410e5224ad46817b4086b96c08bb9ecf9ece08fe"},
+    {file = "impersonation-0.1.1.tar.gz", hash = "sha256:cbf327b51b610f5095a897f399ea160678c0dca30a45b6b2202697e9ee7a212a"},
 ]
 importlib-metadata = [
     {file = "importlib_metadata-4.12.0-py3-none-any.whl", hash = "sha256:7401a975809ea1fdc658c3aa4f78cc2195a0e019c5cbc4c06122884e9ae80c23"},
