@@ -3,14 +3,13 @@ import stat
 import tarfile
 
 import pytest
-from werkzeug.datastructures import FileStorage
 
 from src.services.filesystem import FilesystemSvc
 
 
 @pytest.fixture(scope="class")
 def svc():
-    return FilesystemSvc(username="test")
+    return FilesystemSvc
 
 
 class TestFilesystemSvc:
@@ -42,11 +41,10 @@ class TestFilesystemSvc:
             svc.list(path=file)
         assert "No such file or directory" in str(ex.value)
 
-    def test_save(self, svc, file, mocker):
-        f = FileStorage(filename=file.name)
-        mocker.patch.object(f, "save")
-        svc.save(dst=os.path.dirname(file), file=f)
-        assert f.filename == file.name
+    def test_create(self, svc, file):
+        svc.create(file.as_posix(), content=b"dummy content")
+        assert file.exists() is True
+        assert file.read_text() == "dummy content"
 
     def test_mkdir(self, svc, filedir):
         dirpath = filedir / "dir"
