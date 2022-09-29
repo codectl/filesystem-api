@@ -9,18 +9,17 @@ __all__ = ("FileManagerSvc",)
 
 
 class FileManagerSvc(FilesystemSvc):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-    def list(self, path, show_hidden=False, substr=None):
+    @staticmethod
+    def list(path, show_hidden=False, substr=None):
         """Override"""
         regex = rf".*{(substr or '').strip('*')}.*"
-        files = super().list(path, show_hidden=show_hidden)
+        files = FilesystemSvc.list(path, show_hidden=show_hidden)
         return [file for file in files if re.match(regex, file.name)]
 
-    def stats(self, path) -> dict:
+    @classmethod
+    def stats(cls, path) -> dict:
         """Override"""
-        return self.stats_mapper(path, stats=super().stats(path))
+        return cls.stats_mapper(path, stats=FilesystemSvc.stats(path))
 
     @staticmethod
     def stats_mapper(path: str, stats: os.stat_result) -> dict:
