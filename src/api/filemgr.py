@@ -5,7 +5,6 @@ from flask_restful import Api, Resource
 from marshmallow import EXCLUDE, ValidationError
 
 from src import utils
-from src.api.auth import current_username
 from src.schemas.deserializers import filemgr as dsl
 from src.schemas.serializers import filemgr as sl
 from src.services.filemgr import FileManagerSvc
@@ -48,7 +47,7 @@ class FileManagerActions(Resource):
                                 - ErrorResponseSchema
         """
         payload = request.json
-        svc = FileManagerSvc(username=current_username)
+        svc = FileManagerSvc
         try:
             # throw error when invalid action
             dsl.ReadActionSchema(only=("action",), unknown=EXCLUDE).load(payload)
@@ -58,7 +57,6 @@ class FileManagerActions(Resource):
                     path=req["path"],
                     show_hidden=req["showHiddenItems"],
                 )
-                print(files)
                 return sl.dump_stats(
                     cwd=svc.stats(path=req["path"]),
                     files=[svc.stats(file.as_posix()) for file in files],
@@ -209,7 +207,7 @@ class FileManagerDownload(Resource):
                 $ref: "#/components/responses/Forbidden"
         """
         payload = request.form
-        svc = FileManagerSvc(username=current_username)
+        svc = FileManagerSvc
         try:
             req = dsl.DownloadSchema().load(payload)
             names = req["downloadInput"]["names"]
@@ -265,7 +263,7 @@ class FileManagerUpload(Resource):
                 $ref: "#/components/responses/Forbidden"
         """
         payload = request.form
-        svc = FileManagerSvc(username=current_username)
+        svc = FileManagerSvc
         try:
             req = dsl.UploadSchema().load(payload)
             if req["action"] == "save":
@@ -313,7 +311,7 @@ class FileManagerImages(Resource):
                 $ref: "#/components/responses/NotFound"
         """
         path = os.path.join(os.path.sep, request.args.get("path", ""))
-        svc = FileManagerSvc(username=current_username)
+        svc = FileManagerSvc
         try:
             if not svc.exists(path):
                 raise FileNotFoundError

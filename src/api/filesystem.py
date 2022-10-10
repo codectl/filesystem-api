@@ -5,8 +5,8 @@ from flask_restful import Api, Resource
 from http.client import HTTPException
 
 from src import utils
+from src.api.auth import requires_auth
 from src.services.filesystem import FilesystemSvc
-from src.api.auth import current_username, requires_auth
 
 blueprint = Blueprint("filesystem", __name__)
 api = Api(blueprint)
@@ -53,7 +53,7 @@ class Filesystem(Resource):
                 $ref: "#/components/responses/NotFound"
         """
         path = utils.normpath(path)
-        svc = FilesystemSvc(username=current_username)
+        svc = FilesystemSvc
         try:
             accept = request.headers.get("accept", "application/json")
             if accept == "application/json":
@@ -121,8 +121,7 @@ class Filesystem(Resource):
                 $ref: "#/components/responses/Forbidden"
         """
         path = utils.normpath(path)
-        username = current_username
-        svc = FilesystemSvc(username=username)
+        svc = FilesystemSvc
         files = request.files.to_dict(flat=False).get("files", [])
         if not files:
             utils.abort_with(code=400, message="missing files")
@@ -130,7 +129,9 @@ class Filesystem(Resource):
             if any(svc.exists(os.path.join(path, file.filename)) for file in files):
                 raise FileExistsError("a file already exists in given path")
             for file in files:
-                svc.save(path, file=file)
+                file_path = os.path.join(path, file.filename)
+                content = file.stream.read()
+                svc.create(file_path, content=content)
             return utils.http_response(201), 201
         except PermissionError as ex:
             utils.abort_with(code=403, message=str(ex))
@@ -176,7 +177,7 @@ class Filesystem(Resource):
                 $ref: "#/components/responses/Forbidden"
         """
         path = utils.normpath(path)
-        svc = FilesystemSvc(username=current_username)
+        svc = FilesystemSvc
         files = request.files.to_dict(flat=False).get("files", [])
 
         if not files:
@@ -185,7 +186,9 @@ class Filesystem(Resource):
             if not all(svc.exists(os.path.join(path, file.filename)) for file in files):
                 raise FileNotFoundError("a file does not exist in given path")
             for file in files:
-                svc.save(path, file=file)
+                file_path = os.path.join(path, file.filename)
+                content = file.stream.read()
+                svc.create(file_path, content=content)
             return None, 204
         except PermissionError as ex:
             utils.abort_with(code=403, message=str(ex))
@@ -223,7 +226,7 @@ class Filesystem(Resource):
                 $ref: "#/components/responses/Forbidden"
         """
         path = utils.normpath(path)
-        svc = FilesystemSvc(username=current_username)
+        svc = FilesystemSvc
         try:
             svc.delete(path=path)
             return utils.http_response(204), 204
