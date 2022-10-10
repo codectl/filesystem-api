@@ -3,18 +3,18 @@ from base64 import b64encode
 
 import pytest
 
-from src.services.auth import AuthSvc
 from src.services.filemgr import FileManagerSvc
 
 
 @pytest.fixture(scope="class")
 def svc():
-    return FileManagerSvc(username="test")
+    return FileManagerSvc
 
 
 @pytest.fixture()
-def auth(mocker):
-    mocker.patch.object(AuthSvc, "authenticate", return_value=True)
+def auth(app, mocker):
+    mocker.patch("src.api.auth.load_user", return_value=None)
+    mocker.patch("src.services.auth.AuthSvc.authenticate", return_value=True)
     return {"Authorization": f"Basic {b64encode(b'user:pass').decode()}"}
 
 
