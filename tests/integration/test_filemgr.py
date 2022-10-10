@@ -1,6 +1,8 @@
 import io
 import json
 
+from src import utils
+
 
 class TestFileManagerActions:
     def test_read_action(self, client, tmp_path):
@@ -144,7 +146,7 @@ class TestFileManagerActions:
         assert data["details"]["location"] == file.as_posix()
         assert data["details"]["isFile"] is True
         assert data["details"]["multipleFiles"] is False
-        assert data["details"]["size"] == f"{file.stat().st_size} B"
+        assert data["details"]["size"] == utils.convert_bytes(file.stat().st_size)
 
     def test_dir_details_action(self, client, filedir):
         response = client.post(
@@ -162,7 +164,7 @@ class TestFileManagerActions:
         assert data["details"]["location"] == filedir.as_posix()
         assert data["details"]["isFile"] is False
         assert data["details"]["multipleFiles"] is False
-        assert data["details"]["size"] == f"{filedir.stat().st_size} B"
+        assert data["details"]["size"] == utils.convert_bytes(filedir.stat().st_size)
 
     def test_multiple_files_details_action(self, client, tmp_path):
         file = tmp_path / "file.txt"
@@ -184,7 +186,7 @@ class TestFileManagerActions:
         assert data["details"]["location"] == f"All in {tmp_path.as_posix()}"
         assert data["details"]["isFile"] is False
         assert data["details"]["multipleFiles"] is True
-        assert data["details"]["size"] == f"{filedir.stat().st_size} B"
+        assert data["details"]["size"] == utils.convert_bytes(filedir.stat().st_size)
 
     def test_copy_action(self, client, tmp_path):
         src = tmp_path / "src"
