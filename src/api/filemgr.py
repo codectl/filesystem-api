@@ -268,7 +268,9 @@ class FileManagerUpload(Resource):
             req = dsl.UploadSchema().load(payload)
             if req["action"] == "save":
                 file = request.files["uploadFiles"]
-                svc.save(req["path"], file=file)
+                file_path = os.path.join(req["path"], file.filename)
+                content = file.stream.read()
+                svc.create(file_path, content=content)
             elif req["action"] == "remove":
                 path = os.path.join(req["path"], req["cancel-uploading"])
                 if svc.exists(path):
