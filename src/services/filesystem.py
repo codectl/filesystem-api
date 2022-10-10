@@ -7,10 +7,12 @@ from pathlib import Path
 
 from impersonation import impersonate
 
+from src.api.auth import current_username
+
 __all__ = ("FilesystemSvc",)
 
 
-@impersonate
+@impersonate(username=current_username)
 class FilesystemSvc:
     @staticmethod
     def list(path, show_hidden=False) -> list[Path]:
