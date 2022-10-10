@@ -15,7 +15,7 @@ def app():
             "OPENAPI": "3.0.3",  # default version
         },
     )
-    with app.test_request_context():
+    with app.app_context():
         yield app
 
 

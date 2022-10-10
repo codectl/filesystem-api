@@ -5,7 +5,7 @@ from src.services.filemgr import FileManagerSvc
 
 @pytest.fixture(scope="class")
 def svc():
-    return FileManagerSvc(username="test")
+    return FileManagerSvc
 
 
 class TestFilesystemSvc:

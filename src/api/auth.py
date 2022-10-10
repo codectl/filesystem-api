@@ -7,8 +7,13 @@ from werkzeug.local import LocalProxy
 from src.services.auth import AuthSvc
 
 
-# proxy to get username from g
-current_username = LocalProxy(lambda: getattr(g, "username", None))
+# proxy to load username
+current_username = LocalProxy(lambda: load_user())
+
+
+def load_user():
+    """Load user from request context."""
+    return getattr(g, "username", None)
 
 
 def requires_auth(schemes=("basic",)):
