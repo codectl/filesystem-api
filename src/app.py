@@ -10,18 +10,17 @@ from src.api.filemgr import blueprint as fm
 from src.api.filesystem import blueprint as fs
 from src.settings import oas
 from src.settings.ctx import ctx_settings
-from src.settings.env import config_class, load_dotenv
+from src.settings.env import config_class
 
 
-def create_app(config_name="development", dotenv=True, configs=None):
+def create_app(environ="development", configs=None):
     """Create a new app."""
 
     # define the WSGI application object
     app = Flask(__name__, static_folder=None)
 
     # load object-based default configuration
-    load_dotenv(dotenv)
-    app.config.from_object(config_class(config_name))
+    app.config.from_object(config_class(environ))
     app.config.update(configs or {})
 
     setup_app(app)
