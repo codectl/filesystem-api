@@ -1,5 +1,6 @@
 import requests
 import tempfile
+from pathlib import Path
 
 from OpenSSL import crypto
 from cryptography.hazmat.primitives.serialization import (
@@ -13,7 +14,7 @@ from cryptography.hazmat.primitives.serialization import (
 
 
 key_path = "/Users/renato/.ssh/id_rsa"
-key_bytes = open(key_path, "rb").read()
+key_bytes = Path(key_path).read_bytes()
 openssh = load_ssh_private_key(key_bytes, None)
 
 # convert to rsa format
@@ -27,10 +28,10 @@ pem = load_pem_private_key(pem_data, None)
 pkey = crypto.PKey.from_cryptography_key(pem)
 
 cert = crypto.X509()
-cert.get_subject().CN = "rena2damas"
-cert.get_subject().OU = "private"
-cert.get_subject().O = "HOME"
-cert.get_subject().C = "US"
+cert.get_subject().commonName = "rena2damas"
+cert.get_subject().organizationalUnitName = "private"
+cert.get_subject().organizationName = "HOME"
+cert.get_subject().countryName = "US"
 cert.set_serial_number(1000)
 cert.gmtime_adj_notBefore(0)
 cert.gmtime_adj_notAfter(10 * 365 * 24 * 60 * 60)
@@ -57,9 +58,6 @@ try:
     cer.seek(0)
     key.seek(0)
 
-    # pkey = crypto.PKey()
-    # pkey.generate_key(crypto.TYPE_RSA, 1024)
-
     response = requests.get(
         "https://localhost:8080/",
         verify="ssl/server.crt",
@@ -69,5 +67,3 @@ try:
 finally:
     cer.close()
     key.close()
-
-# # print(crypto.dump_certificate(crypto.FILETYPE_PEM, cert).decode())

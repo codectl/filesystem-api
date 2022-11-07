@@ -5,7 +5,7 @@ from pathlib import Path
 from cryptography.hazmat.primitives.serialization import load_ssh_private_key
 
 username = os.getlogin()  # current username
-data = open(os.path.join(Path.home(), ".ssh", "id_rsa"), "rb").read()
+data = Path(os.path.join(Path.home(), ".ssh", "id_rsa")).read_bytes()
 key = load_ssh_private_key(data, password=None)
 token = jwt.encode({"sub": username}, key, algorithm="RS256")
 
