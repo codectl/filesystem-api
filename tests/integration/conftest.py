@@ -6,7 +6,7 @@ from src.app import create_app
 @pytest.fixture(scope="class")
 def app():
     app = create_app(
-        config_name="testing",
+        environ="testing",
         configs={
             "FLASK_RUN_HOST": "localhost",
             "FLASK_RUN_PORT": 5000,
