@@ -20,7 +20,7 @@ openssh = load_ssh_private_key(key_bytes, None)
 pem_data = openssh.private_bytes(
     encoding=Encoding.PEM,
     format=PrivateFormat.TraditionalOpenSSL,
-    encryption_algorithm=NoEncryption()
+    encryption_algorithm=NoEncryption(),
 )
 
 pem = load_pem_private_key(pem_data, None)
@@ -42,10 +42,11 @@ cer = tempfile.NamedTemporaryFile(mode="w+", suffix=".pem")
 key = tempfile.NamedTemporaryFile(mode="w+", suffix=".key")
 try:
     decoded_cer = cert.to_cryptography().public_bytes(Encoding.PEM).decode("utf-8")
-    decoded_key = pem.public_key().public_bytes(
-        encoding=Encoding.PEM,
-        format=PublicFormat.SubjectPublicKeyInfo
-    ).decode("utf-8")
+    decoded_key = (
+        pem.public_key()
+        .public_bytes(encoding=Encoding.PEM, format=PublicFormat.SubjectPublicKeyInfo)
+        .decode("utf-8")
+    )
     cer.write(decoded_cer)
     key.write(pem_data.decode("utf-8"))
 
@@ -62,7 +63,7 @@ try:
     response = requests.get(
         "https://localhost:8080/",
         verify="ssl/server.crt",
-        cert=("ssl/client.crt", "ssl/client.key")
+        cert=("ssl/client.crt", "ssl/client.key"),
     )
     print(response)
 finally:
