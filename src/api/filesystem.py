@@ -72,11 +72,11 @@ class Filesystem(Resource):
             raise HTTPException("unsupported 'accept' HTTP header")
 
         except PermissionError as ex:
-            utils.abort_with(code=403, message=str(ex))
+            utils.abort_with(code=403, description=str(ex))
         except FileNotFoundError as ex:
-            utils.abort_with(code=404, message=str(ex))
+            utils.abort_with(code=404, description=str(ex))
         except HTTPException as ex:
-            utils.abort_with(code=400, message=str(ex))
+            utils.abort_with(code=400, description=str(ex))
 
     @requires_auth(schemes=["basic"])
     def post(self, path):
@@ -124,7 +124,7 @@ class Filesystem(Resource):
         svc = FilesystemSvc
         files = request.files.to_dict(flat=False).get("files", [])
         if not files:
-            utils.abort_with(code=400, message="missing files")
+            utils.abort_with(code=400, description="missing files")
         try:
             if any(svc.exists(os.path.join(path, file.filename)) for file in files):
                 raise FileExistsError("a file already exists in given path")
@@ -134,9 +134,9 @@ class Filesystem(Resource):
                 svc.create(file_path, content=content)
             return utils.http_response(201), 201
         except PermissionError as ex:
-            utils.abort_with(code=403, message=str(ex))
+            utils.abort_with(code=403, description=str(ex))
         except (FileNotFoundError, FileExistsError) as ex:
-            utils.abort_with(code=400, message=str(ex))
+            utils.abort_with(code=400, description=str(ex))
 
     @requires_auth(schemes=["basic"])
     def put(self, path):
@@ -181,7 +181,7 @@ class Filesystem(Resource):
         files = request.files.to_dict(flat=False).get("files", [])
 
         if not files:
-            utils.abort_with(code=400, message="missing files")
+            utils.abort_with(code=400, description="missing files")
         try:
             if not all(svc.exists(os.path.join(path, file.filename)) for file in files):
                 raise FileNotFoundError("a file does not exist in given path")
@@ -191,9 +191,9 @@ class Filesystem(Resource):
                 svc.create(file_path, content=content)
             return None, 204
         except PermissionError as ex:
-            utils.abort_with(code=403, message=str(ex))
+            utils.abort_with(code=403, description=str(ex))
         except FileNotFoundError as ex:
-            utils.abort_with(code=400, message=str(ex))
+            utils.abort_with(code=400, description=str(ex))
 
     @requires_auth(schemes=["basic"])
     def delete(self, path):
@@ -231,8 +231,8 @@ class Filesystem(Resource):
             svc.delete(path=path)
             return utils.http_response(204), 204
         except PermissionError as ex:
-            utils.abort_with(code=403, message=str(ex))
+            utils.abort_with(code=403, description=str(ex))
         except FileNotFoundError as ex:
-            utils.abort_with(code=400, message=str(ex))
+            utils.abort_with(code=400, description=str(ex))
         except OSError as ex:
-            utils.abort_with(code=400, message=str(ex))
+            utils.abort_with(code=400, description=str(ex))

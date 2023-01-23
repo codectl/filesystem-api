@@ -85,7 +85,7 @@ class FileManagerActions(Resource):
                 if svc.exists(dst):
                     return sl.dump_error(
                         code=400,
-                        message=f"Cannot rename {req['name']} to "
+                        description=f"Cannot rename {req['name']} to "
                         f"{req['newName']}: destination already exists.",
                     )
                 else:
@@ -163,7 +163,7 @@ class FileManagerActions(Resource):
                 if conflicts:
                     return sl.dump_error(
                         code=400,
-                        message="File Already Exists",
+                        description="File Already Exists",
                         fileExists=conflicts,
                         files=files,
                     )
@@ -171,11 +171,11 @@ class FileManagerActions(Resource):
 
         # error messages return 200 containing error codes
         except PermissionError:
-            return sl.dump_error(code=403, message="Permission Denied")
+            return sl.dump_error(code=403, description="Permission Denied")
         except FileNotFoundError:
-            return sl.dump_error(code=404, message="File Not Found")
+            return sl.dump_error(code=404, description="File Not Found")
         except (OSError, ValidationError):
-            return sl.dump_error(code=400, message="Bad request")
+            return sl.dump_error(code=400, description="Bad request")
 
 
 @api.resource("/download", endpoint="fm_download")

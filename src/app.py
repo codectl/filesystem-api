@@ -1,11 +1,12 @@
 from apispec import APISpec
 from apispec.ext.marshmallow import MarshmallowPlugin
+from apispec_plugins.types import AuthSchemes, Server, Tag
 from apispec_plugins.webframeworks.flask import FlaskPlugin
 from apispec_ui.flask import Swagger
 from flask import Blueprint, Flask
 from flask_cors import CORS
 
-from src import __meta__, __version__, utils
+from src import __meta__, __version__
 from src.api.filemgr import blueprint as fm
 from src.api.filesystem import blueprint as fs
 from src.settings import oas
@@ -41,9 +42,6 @@ def setup_app(app):
     index.register_blueprint(fm)
     app.register_blueprint(index, url_prefix=url_prefix)
 
-    # base template for OpenAPI specs
-    oas.converter = oas.create_spec_converter(openapi_version)
-
     spec_template = oas.base_template(
         openapi_version=openapi_version,
         info={
@@ -51,23 +49,17 @@ def setup_app(app):
             "version": __version__,
             "description": __meta__["summary"],
         },
-        servers=[oas.Server(url=url_prefix, description=app.config["ENV"])],
-        auths=[oas.AuthSchemes.BasicAuth],
+        servers=[Server(url=url_prefix, description=app.config["ENV"])],
+        auths=[AuthSchemes.BasicAuth],
         tags=[
-            oas.Tag(
+            Tag(
                 name="filesystem",
                 description="CRUD operations over files in the current filesystem",
             ),
-            oas.Tag(
+            Tag(
                 name="file manager",
                 description="Actions that serve React component named File Manager",
             ),
-        ],
-        responses=[
-            utils.http_response(code=400, serialize=False),
-            utils.http_response(code=401, serialize=False),
-            utils.http_response(code=403, serialize=False),
-            utils.http_response(code=404, serialize=False),
         ],
     )
 

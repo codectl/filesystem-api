@@ -1,44 +1,14 @@
-from dataclasses import asdict, dataclass
+from dataclasses import asdict
 
 from apispec.ext.marshmallow import OpenAPIConverter, resolver
 
 from src.schemas.serializers.http import HttpResponseSchema
 
 __all__ = (
-    "Tag",
-    "Server",
-    "HttpResponse",
-    "AuthSchemes",
     "create_spec_converter",
     "base_template",
     "swagger_configs",
 )
-
-
-@dataclass
-class Tag:
-    name: str
-    description: str
-
-
-@dataclass
-class Server:
-    url: str
-    description: str
-
-
-@dataclass
-class HttpResponse:
-    code: int
-    reason: str
-    message: str = ""
-
-
-class AuthSchemes:
-    @dataclass
-    class BasicAuth:
-        type: str = "http"
-        scheme: str = "basic"
 
 
 def create_spec_converter(openapi_version):
