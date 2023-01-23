@@ -106,7 +106,7 @@ class TestFileManagerActions:
         data = response.json
         assert response.status_code == 200
         assert data["error"]["code"] == 400
-        assert "destination already exists" in data["error"]["message"]
+        assert "destination already exists" in data["error"]["description"]
 
     def test_search_action(self, client, tmp_path):
         path = tmp_path.as_posix()
@@ -243,7 +243,7 @@ class TestFileManagerActions:
         assert data["files"][0]["name"] == "file1.txt"
         assert data["files"][0]["path"] == (dst / "file1.txt").as_posix()
         assert data["error"]["code"] == 400
-        assert data["error"]["message"] == "File Already Exists"
+        assert data["error"]["description"] == "File Already Exists"
         assert data["error"]["fileExists"] == ["file2.txt"]
         assert (src / "file1.txt").exists() is False
         assert (src / "file2.txt").exists() is True
@@ -290,7 +290,7 @@ class TestFileManagerActions:
         data = response.json
         assert response.status_code == 200
         assert data["error"]["code"] == 404
-        assert data["error"]["message"] == "File Not Found"
+        assert data["error"]["description"] == "File Not Found"
 
     def test_permission_denied_sends_error(self, client, filedir):
         filedir.chmod(0o000)
@@ -307,7 +307,7 @@ class TestFileManagerActions:
         data = response.json
         assert response.status_code == 200
         assert data["error"]["code"] == 403
-        assert data["error"]["message"] == "Permission Denied"
+        assert data["error"]["description"] == "Permission Denied"
 
 
 class TestFileManagerDownload:
@@ -368,7 +368,7 @@ class TestFileManagerDownload:
             },
         )
         assert response.status_code == 404
-        assert response.json == {"code": 404, "reason": "Not Found", "message": ""}
+        assert response.json == {"code": 404, "description": "Not Found"}
 
 
 class TestFileManagerUpload:
@@ -400,7 +400,7 @@ class TestFileManagerUpload:
             content_type="multipart/form-data",
         )
         assert response.status_code == 404
-        assert response.json == {"code": 404, "reason": "Not Found", "message": ""}
+        assert response.json == {"code": 404, "description": "Not Found"}
 
 
 class TestFileManagerImages:
@@ -422,4 +422,4 @@ class TestFileManagerImages:
             query_string={"path": (tmp_path / "img.jpeg").as_posix()},
         )
         assert response.status_code == 404
-        assert response.json == {"code": 404, "reason": "Not Found", "message": ""}
+        assert response.json == {"code": 404, "description": "Not Found"}

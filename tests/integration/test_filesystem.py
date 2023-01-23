@@ -38,8 +38,8 @@ class TestFilesystemGET:
         data = response.json
         assert response.status_code == 403
         assert data["code"] == 403
-        assert data["reason"] == "Forbidden"
-        assert "Permission denied" in data["message"]
+        assert data["description"].startswith("Forbidden")
+        assert "Permission denied" in data["description"]
 
     def test_missing_path_returns_404(self, client, auth, tmp_path):
         path = (tmp_path / "dir").as_posix()
@@ -47,8 +47,8 @@ class TestFilesystemGET:
         data = response.json
         assert response.status_code == 404
         assert data["code"] == 404
-        assert data["reason"] == "Not Found"
-        assert "No such file or directory" in data["message"]
+        assert data["description"].startswith("Not Found")
+        assert "No such file or directory" in data["description"]
 
     def test_file_attachment_returns_200(self, client, auth, file):
         path = file.as_posix()
@@ -75,8 +75,7 @@ class TestFilesystemGET:
         assert response.status_code == 400
         assert response.json == {
             "code": 400,
-            "message": "unsupported 'accept' HTTP header",
-            "reason": "Bad Request",
+            "description": "Bad Request: unsupported 'accept' HTTP header",
         }
 
 
@@ -103,8 +102,8 @@ class TestFilesystemPOST:
         data = response.json
         assert response.status_code == 400
         assert data["code"] == 400
-        assert data["reason"] == "Bad Request"
-        assert "No such file or directory" in data["message"]
+        assert data["description"].startswith("Bad Request")
+        assert "No such file or directory" in data["description"]
 
     def test_missing_data_returns_400(self, client, auth, tmp_path):
         path = tmp_path.as_posix()
@@ -117,8 +116,7 @@ class TestFilesystemPOST:
         assert response.status_code == 400
         assert response.json == {
             "code": 400,
-            "message": "missing files",
-            "reason": "Bad Request",
+            "description": "Bad Request: missing files",
         }
 
     def test_create_existing_file_returns_400(self, client, auth, file):
@@ -132,8 +130,7 @@ class TestFilesystemPOST:
         assert response.status_code == 400
         assert response.json == {
             "code": 400,
-            "message": "a file already exists in given path",
-            "reason": "Bad Request",
+            "description": "Bad Request: a file already exists in given path",
         }
 
     def test_permission_denied_returns_403(self, client, auth, filedir, file):
@@ -149,8 +146,8 @@ class TestFilesystemPOST:
         data = response.json
         assert response.status_code == 403
         assert data["code"] == 403
-        assert data["reason"] == "Forbidden"
-        assert "Permission denied" in data["message"]
+        assert data["description"].startswith("Forbidden")
+        assert "Permission denied" in data["description"]
 
 
 class TestFilesystemPUT:
@@ -175,8 +172,7 @@ class TestFilesystemPUT:
         assert response.status_code == 400
         assert response.json == {
             "code": 400,
-            "reason": "Bad Request",
-            "message": "a file does not exist in given path",
+            "description": "Bad Request: a file does not exist in given path",
         }
 
     def test_wrong_path_returns_400(self, client, auth, file, tmp_path):
@@ -190,8 +186,7 @@ class TestFilesystemPUT:
         assert response.status_code == 400
         assert response.json == {
             "code": 400,
-            "reason": "Bad Request",
-            "message": "a file does not exist in given path",
+            "description": "Bad Request: a file does not exist in given path",
         }
 
     def test_permission_denied_returns_403(self, client, auth, filedir, file):
@@ -207,8 +202,8 @@ class TestFilesystemPUT:
         data = response.json
         assert response.status_code == 403
         assert data["code"] == 403
-        assert data["reason"] == "Forbidden"
-        assert "Permission denied" in data["message"]
+        assert data["description"].startswith("Forbidden")
+        assert "Permission denied" in data["description"]
 
 
 class TestFilesystemDELETE:
@@ -232,8 +227,8 @@ class TestFilesystemDELETE:
         data = response.json
         assert response.status_code == 400
         assert data["code"] == 400
-        assert data["reason"] == "Bad Request"
-        assert "Directory not empty" in data["message"]
+        assert data["description"].startswith("Bad Request")
+        assert "Directory not empty" in data["description"]
 
     def test_delete_missing_file_returns_400(self, client, auth, tmp_path):
         path = (tmp_path / "xyz").as_posix()
@@ -241,8 +236,8 @@ class TestFilesystemDELETE:
         data = response.json
         assert response.status_code == 400
         assert data["code"] == 400
-        assert data["reason"] == "Bad Request"
-        assert "No such file or directory" in data["message"]
+        assert data["description"].startswith("Bad Request")
+        assert "No such file or directory" in data["description"]
 
     def test_permission_denied_returns_403(self, client, auth, filedir):
         path = (filedir / "file.txt").as_posix()
@@ -252,5 +247,5 @@ class TestFilesystemDELETE:
         data = response.json
         assert response.status_code == 403
         assert data["code"] == 403
-        assert data["reason"] == "Forbidden"
-        assert "Permission denied" in data["message"]
+        assert data["description"].startswith("Forbidden")
+        assert "Permission denied" in data["description"]

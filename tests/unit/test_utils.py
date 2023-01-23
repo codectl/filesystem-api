@@ -1,7 +1,6 @@
-from dataclasses import asdict
-
 import pytest
 import werkzeug.exceptions
+from apispec_plugins.types import HTTPResponse
 
 from src.utils import (
     convert_bytes,
@@ -36,40 +35,35 @@ def test_normpath():
 
 
 def test_response():
-    assert http_response(code=200, message="test") == {
+    assert http_response(code=200, description="test") == {
         "code": 200,
-        "reason": "OK",
-        "message": "test",
+        "description": "OK: test",
     }
-    assert asdict(http_response(code=400, message="error", serialize=False)) == {
-        "code": 400,
-        "reason": "Bad Request",
-        "message": "error",
-    }
+    assert http_response(code=400, description="error", serialize=False) == HTTPResponse(
+        code=400,
+        description="Bad Request: error"
+    )
 
 
 def test_abort_with():
     with pytest.raises(werkzeug.exceptions.BadRequest) as ex:
-        assert abort_with(code=400, message="custom message")
+        assert abort_with(code=400, description="custom message")
     assert ex.value.code == 400
     assert ex.value.data == {
         "code": 400,
-        "reason": "Bad Request",
-        "message": "custom message",
+        "description": "Bad Request: custom message",
     }
     with pytest.raises(werkzeug.exceptions.Unauthorized) as ex:
-        assert abort_with(code=401, message="custom message")
+        assert abort_with(code=401, description="custom message")
     assert ex.value.code == 401
     assert ex.value.data == {
         "code": 401,
-        "reason": "Unauthorized",
-        "message": "custom message",
+        "description": "Unauthorized: custom message",
     }
     with pytest.raises(werkzeug.exceptions.Forbidden) as ex:
-        assert abort_with(code=403, message="custom message")
+        assert abort_with(code=403, description="custom message")
     assert ex.value.code == 403
     assert ex.value.data == {
         "code": 403,
-        "reason": "Forbidden",
-        "message": "custom message",
+        "description": "Forbidden: custom message",
     }
