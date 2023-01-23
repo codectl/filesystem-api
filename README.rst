@@ -5,11 +5,11 @@ filesystem-api
 .. image:: https://img.shields.io/docker/v/renatodamas/filesystem-api?logo=docker
     :target: https://hub.docker.com/repository/docker/renatodamas/filesystem-api
     :alt: docker
-.. image:: https://github.com/rena2damas/filesystem-api/actions/workflows/ci.yaml/badge.svg
-    :target: https://github.com/rena2damas/filesystem-api/actions/workflows/ci.yaml
+.. image:: https://github.com/codectl/filesystem-api/actions/workflows/ci.yaml/badge.svg
+    :target: https://github.com/codectl/filesystem-api/actions/workflows/ci.yaml
     :alt: CI
-.. image:: https://codecov.io/gh/rena2damas/filesystem-api/branch/master/graph/badge.svg
-    :target: https://app.codecov.io/gh/rena2damas/filesystem-api/branch/master
+.. image:: https://codecov.io/gh/codectl/filesystem-api/branch/master/graph/badge.svg
+    :target: https://app.codecov.io/gh/codectl/filesystem-api/branch/master
     :alt: codecov
 .. image:: https://img.shields.io/badge/code%20style-black-000000.svg
     :target: https://github.com/psf/black
