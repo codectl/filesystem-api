@@ -200,11 +200,8 @@ class FileManagerDownload(Resource):
                             type: string
                             format: binary
             400:
-                $ref: "#/components/responses/BadRequest"
             401:
-                $ref: "#/components/responses/Unauthorized"
             403:
-                $ref: "#/components/responses/Forbidden"
         """
         payload = request.form
         svc = FileManagerSvc
@@ -256,11 +253,8 @@ class FileManagerUpload(Resource):
                                 - $ref: "#/components/schemas/HttpResponse"
                                 - ErrorResponseSchema
             400:
-                $ref: "#/components/responses/BadRequest"
             401:
-                $ref: "#/components/responses/Unauthorized"
             403:
-                $ref: "#/components/responses/Forbidden"
         """
         payload = request.form
         svc = FileManagerSvc
@@ -306,11 +300,8 @@ class FileManagerImages(Resource):
                             type: string
                             format: binary
             400:
-                $ref: "#/components/responses/BadRequest"
             403:
-                $ref: "#/components/responses/Forbidden"
             404:
-                $ref: "#/components/responses/NotFound"
         """
         path = os.path.join(os.path.sep, request.args.get("path", ""))
         svc = FileManagerSvc
