@@ -1,6 +1,5 @@
 import pytest
 import werkzeug.exceptions
-from apispec_plugins.types import HTTPResponse
 
 from src.utils import (
     convert_bytes,
