@@ -21,13 +21,11 @@ def normpath(path) -> Path:
     return Path(os.path.join(os.path.sep, path.strip(os.path.sep)))
 
 
-def http_response(code: int, description="", serialize=True, **kwargs):
+def http_response(code: int, description="", **kwargs):
     reason = HTTP_STATUS_CODES[code]
     description = f"{reason}: {description}" if description else reason
     response = HTTPResponse(code=code, description=description)
-    if serialize:
-        return HttpResponseSchema(**kwargs).dump(response)
-    return response
+    return HttpResponseSchema(**kwargs).dump(response)
 
 
 def abort_with(code: int, description="", **kwargs):

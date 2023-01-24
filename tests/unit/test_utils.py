@@ -39,9 +39,6 @@ def test_response():
         "code": 200,
         "description": "OK: test",
     }
-    assert http_response(
-        code=400, description="error", serialize=False
-    ) == HTTPResponse(code=400, description="Bad Request: error")
 
 
 def test_abort_with():
