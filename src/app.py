@@ -1,6 +1,7 @@
 from apispec import APISpec
 from apispec.ext.marshmallow import MarshmallowPlugin
 from apispec_plugins.types import AuthSchemes, Server, Tag
+from apispec_plugins.utils import base_template
 from apispec_plugins.webframeworks.flask import FlaskPlugin
 from apispec_ui.flask import Swagger
 from flask import Blueprint, Flask
@@ -42,7 +43,7 @@ def setup_app(app):
     index.register_blueprint(fm)
     app.register_blueprint(index, url_prefix=url_prefix)
 
-    spec_template = oas.base_template(
+    spec_template = base_template(
         openapi_version=openapi_version,
         info={
             "title": __meta__["name"],
@@ -50,7 +51,7 @@ def setup_app(app):
             "description": __meta__["summary"],
         },
         servers=[Server(url=url_prefix, description=app.config["ENV"])],
-        auths=[AuthSchemes.BasicAuth],
+        auths=[AuthSchemes.BasicAuth()],
         tags=[
             Tag(
                 name="filesystem",
