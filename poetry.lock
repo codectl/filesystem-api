@@ -361,14 +361,14 @@ license = ["ukkonen"]
 
 [[package]]
 name = "impersonation"
-version = "1.0.0"
+version = "1.0.1"
 description = "Utility for user impersonation by running instructions under given user"
 category = "main"
 optional = false
 python-versions = ">=3.8,<4.0"
 files = [
-    {file = "impersonation-1.0.0-py3-none-any.whl", hash = "sha256:4ed4e0539a9a61656858d75870993b275028d89c32223a442953078161fa0727"},
-    {file = "impersonation-1.0.0.tar.gz", hash = "sha256:2054dc4f261c2272ed98cdaa8ca8975bec0b3ea020046d413a58980cb822ea4e"},
+    {file = "impersonation-1.0.1-py3-none-any.whl", hash = "sha256:f3c5290fec51a5137feef6ea721cdddf719c68adc6e67d2f7609ee61fe993a87"},
+    {file = "impersonation-1.0.1.tar.gz", hash = "sha256:51544d38b77ef5b958c9365f08438ba70b40e39cac6084637747d14f6732d077"},
 ]
 
 [[package]]
@@ -810,4 +810,4 @@ testing = ["flake8 (<5)", "func-timeout", "jaraco.functools", "jaraco.itertools"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "d9c8aa6a9ab8fde096f41f00dba2f783456b4809f0a4f69326329eaf81b6417d"
+content-hash = "670dd9c2a1d6c2734c92168caf8f28fbd48732b45306561222776ad7b4cb0096"
