@@ -46,9 +46,9 @@ impersonation = "^1.1.0"
 python = "^3.9"
 
 [tool.poetry.dev-dependencies]
-coverage = "^7.2.2"
-pre-commit = "^3.2.2"
-pytest = "^7.2.1"
+coverage = "^7.2.1"
+pre-commit = "^3.0.4"
+pytest = "^7.2.2"
 pytest-mock = "^3.10.0"
 
 [tool.poetry.urls]
